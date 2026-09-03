@@ -1,0 +1,967 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+  UNDER_REVIEW
+  KYC_PENDING
+  WITHDRAWAL_RESTRICTED
+}
+
+enum UserRole {
+  STUDENT
+  SUPER_ADMIN
+  CONTENT_ADMIN
+  TEST_ADMIN
+  FINANCE_ADMIN
+  SUPPORT_ADMIN
+  READ_ONLY
+}
+
+enum WalletTxnType {
+  DEPOSIT
+  FLASH_UNLOCK
+  MCQ_UNLOCK
+  TEST_ENTRY
+  BOOK_UNLOCK
+  AWARD_CREDIT
+  WITHDRAWAL
+  REFUND
+  ADMIN_ADJUSTMENT
+}
+
+enum LedgerStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REVERSED
+  REFUNDED
+}
+
+enum ContentStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum FlashRating {
+  EASY
+  HARD
+}
+
+enum AchievementTier {
+  GOLD
+  SILVER
+  BRONZE
+}
+
+enum AchievementCriterion {
+  STREAK_DAYS
+  MCQ_ANSWERED
+  FLASH_REVIEWED
+  TESTS_SUBMITTED
+  SUBJECT_MASTERY
+  MODULES_COMPLETE
+  NEWS_READ
+  POINTS_TOTAL
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  passwordHash    String
+  fullName        String?
+  firstName       String?
+  lastName        String?
+  role            UserRole      @default(STUDENT)
+  status          AccountStatus @default(ACTIVE)
+  pointsBalance   Int           @default(0)
+  streakCount     Int           @default(0)
+  streakLocalDate DateTime?     @db.Date
+  lastLoginAt     DateTime?
+  lastLoginIp     String?
+  sessionVersion  Int           @default(0)
+  disabledAt      DateTime?
+  disabledReason  String?
+  passwordResetTokenHash String?   @unique
+  passwordResetExpiresAt DateTime?
+  totpEnabled     Boolean       @default(false)
+  totpSecretEnc   String?
+  totpPendingEnc  String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  profile         UserProfile?
+  wallet          Wallet?
+  flashViews      FlashCardView[]
+  flashReviews    FlashCardReview[]
+  mcqAttempts     McqAttempt[]
+  unlocks         ContentUnlock[]
+  ledgerEntries   WalletLedger[]
+  payments        Payment[]
+  registrations   TestRegistration[]
+  attempts        TestAttempt[]
+  withdrawals     Withdrawal[]
+  awardPayouts    AwardPayout[]
+  tickets         SupportTicket[]
+  supportMessages SupportMessage[]     @relation("SupportMessageAuthor")
+  devices         DeviceSession[]
+  authEvents      AuthEvent[]
+  fraudFlags      FraudFlag[]
+  auditLogs       AuditLog[]           @relation("AuditActor")
+  accountActions  AccountAction[]      @relation("AccountActionSubject")
+  accountActionsTaken AccountAction[]  @relation("AccountActionActor")
+  curriculum      StudentCurriculum?
+  streakDays      StreakDay[]
+  pointEvents     PointEvent[]
+  achievements    UserAchievement[]
+  articleReads    ArticleRead[]
+  contentGrants   StudentContentGrant[]
+  rightsRequests  DataRightsRequest[]
+  rightsActionsTaken DataRightsRequest[] @relation("RightsActor")
+  nominee         UserNominee?
+}
+
+model UserProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  mobile              String?
+  classOrExam         String?
+  city                String?
+  state               String?
+  dateOfBirth         DateTime?
+  parentGuardian      String?
+  parentalConsentStatus String  @default("NONE")
+  parentalConsentRef  String?
+  parentalConsentAt   DateTime?
+  parentalConsentNote String?
+  consentAccepted     Boolean   @default(false)
+  consentAt           DateTime?
+  profileComplete     Boolean   @default(false)
+  curriculumComplete  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Wallet {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  depositedBalance Decimal  @default(0) @db.Decimal(12, 2)
+  awardBalance     Decimal  @default(0) @db.Decimal(12, 2)
+  promoBalance     Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WalletLedger {
+  id              String        @id @default(cuid())
+  userId          String
+  type            WalletTxnType
+  amount          Decimal       @db.Decimal(12, 2)
+  balanceBefore   Decimal       @db.Decimal(12, 2)
+  balanceAfter    Decimal       @db.Decimal(12, 2)
+  balanceBucket   String        @default("deposited")
+  status          LedgerStatus  @default(SUCCESSFUL)
+  idempotencyKey  String?       @unique
+  reference       String?
+  meta            Json?
+  createdAt       DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Program {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  examBoard   String?
+  sortOrder   Int           @default(0)
+  status      ContentStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  subjects    ProgramSubject[]
+  curricula   StudentCurriculum[]
+  articles    Article[]
+  achievements Achievement[]
+
+  @@index([status, sortOrder])
+}
+
+model ProgramSubject {
+  id        String        @id @default(cuid())
+  programId String
+  name      String
+  blurb     String?
+  iconKey   String?
+  sortOrder Int           @default(0)
+  status    ContentStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  program      Program              @relation(fields: [programId], references: [id], onDelete: Cascade)
+  topics       Topic[]
+  books        Book[]
+  modules      CurriculumModule[]
+  achievements Achievement[]
+
+  @@unique([programId, name])
+  @@index([programId, sortOrder])
+}
+
+model Topic {
+  id        String        @id @default(cuid())
+  subjectId String
+  name      String
+  sortOrder Int           @default(0)
+  status    ContentStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  subject  ProgramSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chapters Chapter[]
+
+  @@unique([subjectId, name])
+  @@index([subjectId, sortOrder])
+}
+
+model Author {
+  id        String        @id @default(cuid())
+  name      String
+  slug      String        @unique
+  bio       String?
+  sortOrder Int           @default(0)
+  status    ContentStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  books Book[]
+
+  @@index([status, sortOrder])
+}
+
+model Book {
+  id                String        @id @default(cuid())
+  subjectId         String
+  authorId          String
+  title             String
+  slug              String        @unique
+  subtitle          String?
+  coverUrl          String?
+  price             Decimal       @default(0) @db.Decimal(12, 2)
+  includedInProgram Boolean       @default(true)
+  sortOrder         Int           @default(0)
+  status            ContentStatus @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  subject  ProgramSubject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  author   Author                @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  chapters Chapter[]
+  grants   StudentContentGrant[]
+
+  @@unique([subjectId, title])
+  @@index([authorId])
+  @@index([subjectId, sortOrder])
+  @@index([status])
+}
+
+model Chapter {
+  id          String        @id @default(cuid())
+  title       String
+  subject     String
+  topicId     String?
+  bookId      String?
+  description String?
+  sortOrder   Int           @default(0)
+  status      ContentStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  topic              Topic?              @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  book               Book?               @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  flashCards         FlashCard[]
+  mcqs               Mcq[]
+  categories         Category[]
+  curriculumModules  CurriculumModule[]
+
+  @@index([subject, sortOrder])
+  @@index([topicId, sortOrder])
+  @@index([bookId, sortOrder])
+  @@index([status])
+}
+
+model Category {
+  id        String        @id @default(cuid())
+  chapterId String
+  name      String
+  sortOrder Int           @default(0)
+  status    ContentStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  chapter       Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  subcategories Subcategory[]
+  flashCards    FlashCard[]
+  mcqs          Mcq[]
+
+  @@unique([chapterId, name])
+  @@index([chapterId, sortOrder])
+}
+
+model Subcategory {
+  id         String        @id @default(cuid())
+  categoryId String
+  name       String
+  sortOrder  Int           @default(0)
+  status     ContentStatus @default(ACTIVE)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  flashCards FlashCard[]
+  mcqs       Mcq[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId, sortOrder])
+}
+
+model FlashCard {
+  id            String        @id @default(cuid())
+  chapterId     String?
+  categoryId    String?
+  subcategoryId String?
+  front         String
+  back          String
+  subject       String?
+  topic         String?
+  difficulty    String?
+  status        ContentStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  chapter     Chapter?          @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  category    Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory Subcategory?      @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  views       FlashCardView[]
+  reviews     FlashCardReview[]
+
+  @@index([chapterId, createdAt])
+  @@index([subcategoryId])
+  @@index([status, chapterId])
+}
+
+model Mcq {
+  id            String        @id @default(cuid())
+  chapterId     String?
+  categoryId    String?
+  subcategoryId String?
+  question      String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctOption String
+  explanation   String?
+  subject       String?
+  topic         String?
+  difficulty    String?
+  status        ContentStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  chapter       Chapter?           @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  category      Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory   Subcategory?       @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  attempts      McqAttempt[]
+  liveTestLinks LiveTestQuestion[]
+
+  @@index([chapterId, createdAt])
+  @@index([subcategoryId])
+  @@index([status, chapterId])
+  @@index([status, subcategoryId])
+}
+
+model FlashCardView {
+  id          String   @id @default(cuid())
+  userId      String
+  flashCardId String
+  viewedAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashCard FlashCard @relation(fields: [flashCardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, flashCardId])
+  @@index([userId, viewedAt])
+}
+
+model FlashCardReview {
+  id          String      @id @default(cuid())
+  userId      String
+  flashCardId String
+  rating      FlashRating
+  dueAt       DateTime
+  createdAt   DateTime    @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashCard FlashCard @relation(fields: [flashCardId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dueAt])
+  @@index([userId, flashCardId, createdAt])
+}
+
+model McqAttempt {
+  id            String   @id @default(cuid())
+  userId        String
+  mcqId         String
+  selectedOption String
+  isCorrect     Boolean
+  attemptedAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mcq  Mcq  @relation(fields: [mcqId], references: [id], onDelete: Cascade)
+
+  @@index([userId, attemptedAt])
+  @@index([userId, mcqId])
+}
+
+model ContentUnlock {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  quota     Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind, expiresAt])
+}
+
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  CANCELLED
+}
+
+enum LiveTestStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  JOINED
+  REFUNDED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  PROCESSING
+  SUCCESSFUL
+  FAILED
+  REJECTED
+}
+
+enum AwardPayoutStatus {
+  PENDING_REVIEW
+  CREDITED
+  REJECTED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String
+  amount         Decimal       @db.Decimal(12, 2)
+  status         PaymentStatus @default(PENDING)
+  provider       String        @default("sandbox")
+  providerRef    String?       @unique
+  idempotencyKey String        @unique
+  meta           Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model LiveTest {
+  id                 String         @id @default(cuid())
+  title              String
+  subject            String?
+  scheduledAt        DateTime?
+  durationMinutes    Int            @default(30)
+  entryFee           Decimal        @db.Decimal(12, 2)
+  minAwardPool       Decimal        @default(1000) @db.Decimal(12, 2)
+  awardRules         Json?
+  platformFeePercent Decimal        @default(10) @db.Decimal(5, 2)
+  negativeMark       Decimal        @default(0) @db.Decimal(5, 2)
+  marksPerCorrect    Decimal        @default(1) @db.Decimal(5, 2)
+  status             LiveTestStatus @default(SCHEDULED)
+  cancelReason       String?
+  resultDeclaredAt   DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  questions     LiveTestQuestion[]
+  registrations TestRegistration[]
+  attempts      TestAttempt[]
+  awards        AwardPayout[]
+}
+
+model LiveTestQuestion {
+  id      String @id @default(cuid())
+  testId  String
+  mcqId   String
+  sortOrder Int  @default(0)
+
+  test LiveTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  mcq  Mcq      @relation(fields: [mcqId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, mcqId])
+  @@index([testId, sortOrder])
+}
+
+model TestRegistration {
+  id        String             @id @default(cuid())
+  testId    String
+  userId    String
+  status    RegistrationStatus @default(JOINED)
+  feePaid   Decimal            @db.Decimal(12, 2)
+  joinedAt  DateTime           @default(now())
+
+  test LiveTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, userId])
+  @@index([userId])
+}
+
+model TestAttempt {
+  id             String        @id @default(cuid())
+  testId         String
+  userId         String
+  status         AttemptStatus @default(IN_PROGRESS)
+  startedAt      DateTime      @default(now())
+  submittedAt    DateTime?
+  score          Decimal       @default(0) @db.Decimal(10, 2)
+  correctCount   Int           @default(0)
+  incorrectCount Int           @default(0)
+  skippedCount   Int           @default(0)
+  timeTakenMs    Int?
+  rank           Int?
+  deviceId       String?
+  appSwitchCount Int           @default(0)
+  retakeCount    Int           @default(0)
+
+  test    LiveTest     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers TestAnswer[]
+
+  @@unique([testId, userId])
+  @@index([testId, score])
+}
+
+model TestAnswer {
+  id             String  @id @default(cuid())
+  attemptId      String
+  mcqId          String
+  selectedOption String?
+  isCorrect      Boolean @default(false)
+
+  attempt TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, mcqId])
+}
+
+model AwardPayout {
+  id           String            @id @default(cuid())
+  testId       String
+  userId       String
+  rank         Int
+  amount       Decimal           @db.Decimal(12, 2)
+  status       AwardPayoutStatus @default(PENDING_REVIEW)
+  reportMeta   Json?
+  creditedAt   DateTime?
+  createdAt    DateTime          @default(now())
+
+  test LiveTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, userId])
+}
+
+model Withdrawal {
+  id            String           @id @default(cuid())
+  userId        String
+  amount        Decimal          @db.Decimal(12, 2)
+  method        String           @default("UPI")
+  destination   String
+  status        WithdrawalStatus @default(PENDING)
+  rejectReason  String?
+  processedAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+model SupportTicket {
+  id        String       @id @default(cuid())
+  userId    String
+  category  String
+  subject   String
+  message   String
+  status    TicketStatus @default(OPEN)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages SupportMessage[]
+}
+
+enum DataRightsType {
+  ACCESS
+  CORRECT
+  ERASE
+  CONSENT_WITHDRAW
+  NOMINATE
+  GRIEVANCE
+}
+
+enum DataRightsStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_USER
+  HOLD
+  DONE
+  REJECTED
+}
+
+model DataRightsRequest {
+  id          String           @id @default(cuid())
+  userId      String
+  type        DataRightsType
+  status      DataRightsStatus @default(OPEN)
+  purpose     String?
+  reason      String
+  payload     Json?
+  dueAt       DateTime?
+  holdUntil   DateTime?
+  closedAt    DateTime?
+  actorUserId String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("RightsActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([type, status])
+}
+
+model UserNominee {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  name      String
+  email     String?
+  mobile    String?
+  relation  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SupportMessage {
+  id           String   @id @default(cuid())
+  ticketId     String
+  authorUserId String
+  body         String
+  visibility   String   @default("INTERNAL")
+  createdAt    DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User          @relation("SupportMessageAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, createdAt])
+}
+
+model DeviceSession {
+  id            String    @id @default(cuid())
+  userId        String
+  deviceId      String
+  platform      String?
+  lastIp        String?
+  lastUserAgent String?
+  lastSeenAt    DateTime  @default(now())
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([deviceId])
+}
+
+model AuthEvent {
+  id             String   @id @default(cuid())
+  userId         String?
+  emailAttempted String?
+  event          String
+  success        Boolean
+  occurredAt     DateTime @default(now())
+  ip             String?
+  userAgent      String?
+  deviceId       String?
+  platform       String?
+  country        String?
+  city           String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, occurredAt])
+  @@index([ip, occurredAt])
+  @@index([event, occurredAt])
+}
+
+model FraudFlag {
+  id        String   @id @default(cuid())
+  userId    String
+  testId    String?
+  type      String
+  severity  String   @default("MEDIUM")
+  meta      Json?
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([testId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  entityType  String?
+  entityId    String?
+  ip          String?
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model AccountAction {
+  id            String        @id @default(cuid())
+  userId        String
+  actorUserId   String
+  fromStatus    AccountStatus
+  toStatus      AccountStatus
+  action        String
+  reason        String
+  notifyStudent Boolean       @default(false)
+  ip            String?
+  createdAt     DateTime      @default(now())
+
+  user  User @relation("AccountActionSubject", fields: [userId], references: [id], onDelete: Cascade)
+  actor User @relation("AccountActionActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+}
+
+model StudentCurriculum {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  programId  String
+  targetYear Int?
+  builtAt    DateTime  @default(now())
+  rebuiltAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program            @relation(fields: [programId], references: [id], onDelete: Restrict)
+  modules CurriculumModule[]
+
+  @@index([programId])
+}
+
+model CurriculumModule {
+  id           String @id @default(cuid())
+  curriculumId String
+  chapterId    String
+  subjectId    String
+  sortOrder    Int    @default(0)
+
+  curriculum StudentCurriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  chapter    Chapter           @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  subject    ProgramSubject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([curriculumId, chapterId])
+  @@index([curriculumId, sortOrder])
+}
+
+model StudentContentGrant {
+  id         String   @id @default(cuid())
+  userId     String
+  bookId     String
+  source     String
+  amountPaid Decimal  @default(0) @db.Decimal(12, 2)
+  ledgerId   String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId, createdAt])
+  @@index([bookId])
+}
+
+model StreakDay {
+  id     String   @id @default(cuid())
+  userId String
+  date   DateTime @db.Date
+  source String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model PointEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  amount    Int
+  ref       String?  @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, type])
+}
+
+model Achievement {
+  id            String                @id @default(cuid())
+  name          String
+  description   String
+  iconKey       String                @default("emoji_events")
+  tier          AchievementTier       @default(BRONZE)
+  criterion     AchievementCriterion
+  threshold     Int
+  pointsReward  Int                   @default(25)
+  programId     String?
+  subjectId     String?
+  status        ContentStatus         @default(ACTIVE)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  program Program?         @relation(fields: [programId], references: [id], onDelete: SetNull)
+  subject ProgramSubject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  unlocks UserAchievement[]
+
+  @@index([status, criterion])
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId, unlockedAt])
+}
+
+model Article {
+  id          String        @id @default(cuid())
+  title       String
+  body        String
+  excerpt     String?
+  imageUrl    String?
+  tag         String?
+  featured    Boolean       @default(false)
+  programId   String?
+  status      ArticleStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  program Program?      @relation(fields: [programId], references: [id], onDelete: SetNull)
+  reads   ArticleRead[]
+
+  @@index([status, publishedAt])
+  @@index([programId, publishedAt])
+}
+
+model ArticleRead {
+  id          String   @id @default(cuid())
+  userId      String
+  articleId   String
+  completedAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([userId, completedAt])
+}

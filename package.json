@@ -1,0 +1,22 @@
+{
+  "name": "learning-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Competitive Learning & Scholarship Platform monorepo",
+  "scripts": {
+    "dev:api": "pnpm --filter @learning/api dev",
+    "dev:web": "pnpm --filter @learning/web dev",
+    "dev:admin": "pnpm --filter @learning/admin dev",
+    "build:api": "pnpm --filter @learning/api build",
+    "build:web": "pnpm --filter @learning/web build",
+    "build:admin": "pnpm --filter @learning/admin build",
+    "db:generate": "pnpm --filter @learning/api db:generate",
+    "db:migrate": "pnpm --filter @learning/api db:migrate",
+    "test:api": "pnpm --filter @learning/api test",
+    "lint": "pnpm -r lint"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

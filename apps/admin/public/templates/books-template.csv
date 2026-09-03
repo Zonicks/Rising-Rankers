@@ -1,0 +1,4 @@
+program,subject,book,author,subtitle,price,includedInProgram,chapter,category,subcategory,question,optionA,optionB,optionC,optionD,correctOption,explanation,difficulty
+UPSC,Polity,Indian Polity,M. Laxmikanth,For Civil Services,0,yes,Fundamental Rights,Rights,Equality,Article 14 guarantees,Right to property,Equality before law,Freedom of speech,Right to education,B,Equality before law is Article 14,medium
+UPSC,Polity,Indian Polity,M. Laxmikanth,For Civil Services,0,yes,Parliament,Legislature,Lok Sabha,The Lok Sabha is also called,Council of States,House of the People,Upper House,Rajya Sabha,B,Lok Sabha is the House of the People,easy
+NEET,Biology,NCERT Biology Class 11,NCERT,Core text,199,no,The Living World,Diversity,Basics,The smallest unit of classification is,Phylum,Genus,Species,Order,C,Species is the basic unit,easy

@@ -1,0 +1,245 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f4f6fb;
+  --bg-elevated: #ffffff;
+  --ink: #0e1116;
+  --ink-soft: #3c4450;
+  --muted: #8b939e;
+  --line: #e6e8ec;
+  --line-strong: #d0d4db;
+  --accent: #1e4fc4;
+  --accent-soft: #e7eefb;
+  --accent-hover: #173fa0;
+  --deep: #050b18;
+  --deep-mid: #0c1b3d;
+  --gold: #f0c21a;
+  --gold-soft: #fbf6dc;
+  --danger: #b42318;
+  --danger-soft: #fef3f2;
+  --success: #027a48;
+  --success-soft: #ecfdf3;
+  --warning: #8a5a12;
+  --warning-soft: #f7f0e4;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-card: 0 10px 28px rgba(14, 17, 22, 0.05);
+  --shadow-lift: 0 14px 32px rgba(30, 79, 196, 0.22);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --font-sans: var(--font-figtree);
+}
+
+body {
+  background:
+    radial-gradient(ellipse 90% 55% at 100% -8%, rgba(30, 79, 196, 0.12), transparent 58%),
+    radial-gradient(ellipse 50% 40% at -8% 100%, rgba(240, 194, 26, 0.1), transparent 50%),
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--font-figtree), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-rise {
+  animation: fade-rise 280ms ease-out both;
+}
+
+.admin-input,
+.admin-textarea {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  font-size: 0.9375rem;
+  color: var(--ink);
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.admin-input {
+  height: 2.85rem;
+  padding: 0 1rem;
+}
+
+.admin-textarea {
+  padding: 0.85rem 1rem;
+  resize: vertical;
+  min-height: 5rem;
+}
+
+.admin-input:focus,
+.admin-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.admin-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  display: inline-flex;
+  height: 2.85rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  padding: 0 1.15rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition:
+    background 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  box-shadow: var(--shadow-lift);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+  background: var(--line);
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.btn-secondary {
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  color: var(--ink);
+}
+
+.btn-secondary:hover {
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+.btn-secondary:disabled {
+  background: var(--bg);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.btn-secondary:disabled:hover {
+  background: var(--bg);
+  border-color: var(--line);
+}
+
+.btn-danger {
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: var(--danger-soft);
+}
+
+.btn-sm {
+  height: 2.35rem;
+  padding: 0 0.9rem;
+  font-size: 0.8125rem;
+  box-shadow: none;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1.35rem 1.5rem 1.5rem;
+}
+
+.metric {
+  font-variant-numeric: tabular-nums;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.chip-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.chip-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: transparent;
+}
+
+.chip-success {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: transparent;
+}
+
+.row-list > * + * {
+  border-top: 1px solid var(--line);
+}
+
+.msg-ok {
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.msg-err {
+  border-radius: 16px;
+  background: var(--danger-soft);
+  padding: 0.85rem 1rem;
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.brand-mark {
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: transparent;
+}
