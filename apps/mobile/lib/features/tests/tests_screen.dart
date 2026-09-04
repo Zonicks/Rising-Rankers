@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/device_id.dart';
 import '../../core/theme.dart';
+import '../../ui/skeleton.dart';
 import '../../ui/widgets.dart';
 import '../mcq/mcq_screen.dart';
 
@@ -38,22 +39,36 @@ class _TestsScreenState extends State<TestsScreen> {
 
   Future<void> _load() async {
     setState(() {
-      _loading = true;
+      if (_featured == null && _tests.isEmpty) _loading = true;
       _error = null;
     });
     try {
       final res = await widget.api.request('GET', '/api/v1/tests', auth: true);
-      final stats = await widget.api.request('GET', '/api/v1/me/quiz-stats', auth: true);
+      final stats = await widget.api.request(
+        'GET',
+        '/api/v1/me/quiz-stats',
+        auth: true,
+      );
       Map<String, dynamic>? tracker;
       try {
-        final tr = await widget.api.request('GET', '/api/v1/me/tracker', auth: true);
+        final tr = await widget.api.request(
+          'GET',
+          '/api/v1/me/tracker',
+          auth: true,
+        );
         tracker = tr['data'] as Map<String, dynamic>?;
       } catch (_) {}
       final data = res['data'] as Map<String, dynamic>;
-      final tests = (data['tests'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
-      final subjects = (data['subjects'] as List<dynamic>? ?? []).map((s) => '$s').toList();
+      final tests = (data['tests'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .toList();
+      final subjects = (data['subjects'] as List<dynamic>? ?? [])
+          .map((s) => '$s')
+          .toList();
       setState(() {
-        _featured = data['featured'] is Map ? Map<String, dynamic>.from(data['featured'] as Map) : null;
+        _featured = data['featured'] is Map
+            ? Map<String, dynamic>.from(data['featured'] as Map)
+            : null;
         _tests = tests;
         _subjects = ['All', ...subjects];
         _stats = stats['data'] as Map<String, dynamic>?;
@@ -93,7 +108,9 @@ class _TestsScreenState extends State<TestsScreen> {
         isDismissible: !_busy,
         enableDrag: !_busy,
         backgroundColor: AppColors.bgElevated,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
         builder: (ctx) => _ConfirmEntrySheet(
           title: '${test['title']}',
           charge: charge,
@@ -131,7 +148,11 @@ class _TestsScreenState extends State<TestsScreen> {
     }
   }
 
-  Future<void> _openAttempt(String id, {String? deviceId, bool viewResultOnly = false}) async {
+  Future<void> _openAttempt(
+    String id, {
+    String? deviceId,
+    bool viewResultOnly = false,
+  }) async {
     final did = deviceId ?? await DeviceId.get();
     if (!mounted) return;
     await Navigator.of(context).push(
@@ -155,7 +176,9 @@ class _TestsScreenState extends State<TestsScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.bgElevated,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
         child: Column(
@@ -164,9 +187,15 @@ class _TestsScreenState extends State<TestsScreen> {
           children: [
             Text('Custom quiz', style: Theme.of(ctx).textTheme.labelMedium),
             const SizedBox(height: 8),
-            Text('10-question practice', style: Theme.of(ctx).textTheme.headlineSmall),
+            Text(
+              '10-question practice',
+              style: Theme.of(ctx).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 8),
-            Text('Uses your daily MCQ quota, or a paid unlock if none are left.', style: Theme.of(ctx).textTheme.bodyMedium),
+            Text(
+              'Uses your daily MCQ quota, or a paid unlock if none are left.',
+              style: Theme.of(ctx).textTheme.bodyMedium,
+            ),
             const SizedBox(height: 16),
             if (_trackerSubjects.isEmpty)
               PrimaryButton(
@@ -176,9 +205,14 @@ class _TestsScreenState extends State<TestsScreen> {
                   Navigator.of(context).push(
                     PageRouteBuilder(
                       pageBuilder: (context, animation, secondaryAnimation) =>
-                          Scaffold(body: AppAtmosphere(child: McqScreen(api: widget.api))),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-                          FadeTransition(opacity: animation, child: child),
+                          Scaffold(
+                            body: AppAtmosphere(
+                              child: McqScreen(api: widget.api),
+                            ),
+                          ),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) =>
+                              FadeTransition(opacity: animation, child: child),
                     ),
                   );
                 },
@@ -193,11 +227,22 @@ class _TestsScreenState extends State<TestsScreen> {
                       Navigator.pop(ctx);
                       Navigator.of(context).push(
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => Scaffold(
-                            body: AppAtmosphere(child: McqScreen(api: widget.api, subjectId: '${s['id']}')),
-                          ),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-                              FadeTransition(opacity: animation, child: child),
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  Scaffold(
+                                    body: AppAtmosphere(
+                                      child: McqScreen(
+                                        api: widget.api,
+                                        subjectId: '${s['id']}',
+                                      ),
+                                    ),
+                                  ),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) =>
+                                  FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
                         ),
                       );
                     },
@@ -223,9 +268,16 @@ class _TestsScreenState extends State<TestsScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final featured = _featured;
-    final days = (_stats?['days'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
-    final results = (_stats?['results'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
-    final maxBar = days.fold<int>(1, (n, d) => asInt(d['scorePct']) > n ? asInt(d['scorePct']) : n);
+    final days = (_stats?['days'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    final results = (_stats?['results'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    final maxBar = days.fold<int>(
+      1,
+      (n, d) => asInt(d['scorePct']) > n ? asInt(d['scorePct']) : n,
+    );
     final hPad = MediaQuery.sizeOf(context).width < 380 ? 14.0 : 20.0;
 
     return SafeArea(
@@ -239,7 +291,11 @@ class _TestsScreenState extends State<TestsScreen> {
               child: ListView(
                 padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 140),
                 children: [
-                  StudentChrome(streakCount: _streak, api: widget.api, onSearch: widget.onSearch),
+                  StudentChrome(
+                    streakCount: _streak,
+                    api: widget.api,
+                    onSearch: widget.onSearch,
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -261,16 +317,19 @@ class _TestsScreenState extends State<TestsScreen> {
                       ),
                     ],
                   ),
-                  if (_error != null) ...[const SizedBox(height: 16), InlineError(_error!)],
+                  if (_error != null) ...[
+                    const SizedBox(height: 16),
+                    InlineError(_error!),
+                  ],
                   if (_msg != null) ...[
                     const SizedBox(height: 12),
-                    Text(_msg!, style: t.bodyMedium?.copyWith(color: AppColors.accent)),
+                    Text(
+                      _msg!,
+                      style: t.bodyMedium?.copyWith(color: AppColors.accent),
+                    ),
                   ],
-                  if (_loading)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 64),
-                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                    )
+                  if (_loading && _featured == null && _tests.isEmpty)
+                    const TestsSkeleton()
                   else if (_tab == 'available') ...[
                     if (featured != null) ...[
                       const SizedBox(height: 22),
@@ -281,7 +340,11 @@ class _TestsScreenState extends State<TestsScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [AppColors.deep, AppColors.deepMid, AppColors.accent],
+                            colors: [
+                              AppColors.deep,
+                              AppColors.deepMid,
+                              AppColors.accent,
+                            ],
                           ),
                           boxShadow: AppShadows.lift,
                         ),
@@ -289,23 +352,44 @@ class _TestsScreenState extends State<TestsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(99)),
-                              child: Text('FEATURED CHALLENGE', style: t.labelMedium?.copyWith(color: Colors.white)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white24,
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: Text(
+                                'FEATURED CHALLENGE',
+                                style: t.labelMedium?.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 12),
-                            Text('${featured['title']}', style: t.headlineMedium?.copyWith(color: Colors.white)),
+                            Text(
+                              '${featured['title']}',
+                              style: t.headlineMedium?.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Text(
                               '${asInt(featured['durationMinutes'])} mins · ${asInt(featured['questionCount'])} Qs${featured['cta'] == 'resume' && featured['remainingSeconds'] != null ? ' · ${(asInt(featured['remainingSeconds']) / 60).ceil()} min left' : ''}',
-                              style: t.bodySmall?.copyWith(color: Colors.white70),
+                              style: t.bodySmall?.copyWith(
+                                color: Colors.white70,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
                               children: [
-                                _PriceChip('${featured['priceLabel']}', gold: featured['priceLabel'] != 'FREE'),
+                                _PriceChip(
+                                  '${featured['priceLabel']}',
+                                  gold: featured['priceLabel'] != 'FREE',
+                                ),
                                 if (featured['awardPool'] == true)
                                   _PriceChip(
                                     '${featured['awardLabel'] ?? 'Award pool'}',
@@ -317,8 +401,13 @@ class _TestsScreenState extends State<TestsScreen> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: FilledButton(
-                                onPressed: _busy || featured['cta'] == 'ended' ? null : () => _start(featured),
-                                style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.accent),
+                                onPressed: _busy || featured['cta'] == 'ended'
+                                    ? null
+                                    : () => _start(featured),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppColors.accent,
+                                ),
                                 child: Text(_ctaLabel(featured)),
                               ),
                             ),
@@ -334,21 +423,29 @@ class _TestsScreenState extends State<TestsScreen> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _subjects.length,
-                        separatorBuilder: (context, index) => const SizedBox(width: 8),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 8),
                         itemBuilder: (_, i) {
                           final s = _subjects[i];
                           final on = _filter == s;
                           return GestureDetector(
                             onTap: () => setState(() => _filter = s),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
-                                color: on ? AppColors.accent : const Color(0xFFF2F4F6),
+                                color: on
+                                    ? AppColors.accent
+                                    : const Color(0xFFF2F4F6),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
                                 s == 'All' ? 'All Topics' : s,
-                                style: t.titleMedium?.copyWith(color: on ? Colors.white : AppColors.inkSoft),
+                                style: t.titleMedium?.copyWith(
+                                  color: on ? Colors.white : AppColors.inkSoft,
+                                ),
                               ),
                             ),
                           );
@@ -357,14 +454,20 @@ class _TestsScreenState extends State<TestsScreen> {
                     ),
                     const SizedBox(height: 16),
                     if (_filtered.isEmpty)
-                      const EmptyState(title: 'No tests yet', body: 'When an admin publishes a paper, it will appear here.')
+                      const EmptyState(
+                        title: 'No tests yet',
+                        body:
+                            'When an admin publishes a paper, it will appear here.',
+                      )
                     else
                       ..._filtered.map((test) {
                         final completed = test['completed'] == true;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Opacity(
-                            opacity: completed && test['cta'] == 'result' ? 0.7 : 1,
+                            opacity: completed && test['cta'] == 'result'
+                                ? 0.7
+                                : 1,
                             child: MeritCard(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,24 +483,35 @@ class _TestsScreenState extends State<TestsScreen> {
                                     spacing: 8,
                                     children: [
                                       _PriceChip(
-                                        test['cta'] == 'retake' && asInt(test['chargeAmount']) == 0
+                                        test['cta'] == 'retake' &&
+                                                asInt(test['chargeAmount']) == 0
                                             ? 'Retake free'
                                             : '${test['priceLabel']}',
                                         gold: test['priceLabel'] != 'FREE',
                                       ),
                                       if (test['awardPool'] == true)
-                                        _PriceChip('${test['awardLabel'] ?? 'Award pool'}', gold: false),
+                                        _PriceChip(
+                                          '${test['awardLabel'] ?? 'Award pool'}',
+                                          gold: false,
+                                        ),
                                     ],
                                   ),
                                   const SizedBox(height: 14),
-                                  test['cta'] == 'start' || test['cta'] == 'resume'
+                                  test['cta'] == 'start' ||
+                                          test['cta'] == 'resume'
                                       ? OutlinedButton(
-                                          onPressed: _busy || test['cta'] == 'ended' ? null : () => _start(test),
+                                          onPressed:
+                                              _busy || test['cta'] == 'ended'
+                                              ? null
+                                              : () => _start(test),
                                           child: Text(_ctaLabel(test)),
                                         )
                                       : SecondaryButton(
                                           label: _ctaLabel(test),
-                                          onPressed: _busy || test['cta'] == 'ended' ? null : () => _start(test),
+                                          onPressed:
+                                              _busy || test['cta'] == 'ended'
+                                              ? null
+                                              : () => _start(test),
                                         ),
                                 ],
                               ),
@@ -406,18 +520,28 @@ class _TestsScreenState extends State<TestsScreen> {
                         );
                       }),
                     const SizedBox(height: 12),
-                    _DailyPerformance(stats: _stats, days: days, maxBar: maxBar),
+                    _DailyPerformance(
+                      stats: _stats,
+                      days: days,
+                      maxBar: maxBar,
+                    ),
                   ] else ...[
                     const SizedBox(height: 22),
                     if (results.isEmpty)
-                      const EmptyState(title: 'No results yet', body: 'Submit a quiz and your analysis will land here.')
+                      const EmptyState(
+                        title: 'No results yet',
+                        body: 'Submit a quiz and your analysis will land here.',
+                      )
                     else
                       ...results.map(
                         (r) => Padding(
                           padding: const EdgeInsets.only(bottom: 14),
                           child: MeritCard(
                             padding: const EdgeInsets.all(18),
-                            onTap: () => _openAttempt('${r['testId']}', viewResultOnly: true),
+                            onTap: () => _openAttempt(
+                              '${r['testId']}',
+                              viewResultOnly: true,
+                            ),
                             child: LayoutBuilder(
                               builder: (context, box) {
                                 final compact = box.maxWidth < 340;
@@ -427,20 +551,32 @@ class _TestsScreenState extends State<TestsScreen> {
                                   height: badgeSize,
                                   decoration: BoxDecoration(
                                     color: AppColors.accentSoft,
-                                    borderRadius: BorderRadius.circular(compact ? 16 : 22),
+                                    borderRadius: BorderRadius.circular(
+                                      compact ? 16 : 22,
+                                    ),
                                   ),
                                   child: Center(
                                     child: Text(
                                       '${asInt(r['scorePct'])}%',
-                                      style: (compact ? t.titleLarge : t.headlineMedium)
-                                          ?.copyWith(color: AppColors.accent),
+                                      style:
+                                          (compact
+                                                  ? t.titleLarge
+                                                  : t.headlineMedium)
+                                              ?.copyWith(
+                                                color: AppColors.accent,
+                                              ),
                                     ),
                                   ),
                                 );
                                 final body = Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('${r['title']}', style: compact ? t.titleMedium : t.titleLarge),
+                                    Text(
+                                      '${r['title']}',
+                                      style: compact
+                                          ? t.titleMedium
+                                          : t.titleLarge,
+                                    ),
                                     const SizedBox(height: 6),
                                     Text(
                                       '${r['subject'] ?? 'Mixed'} · Accuracy ${r['accuracy'] ?? '—'}%${r['rank'] != null ? ' · Rank ${r['rank']}' : ''}',
@@ -450,7 +586,8 @@ class _TestsScreenState extends State<TestsScreen> {
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(99),
                                       child: LinearProgressIndicator(
-                                        value: (asInt(r['scorePct']) / 100).clamp(0, 1),
+                                        value: (asInt(r['scorePct']) / 100)
+                                            .clamp(0, 1),
                                         minHeight: compact ? 6 : 8,
                                         backgroundColor: AppColors.bgLow,
                                         color: AppColors.accent,
@@ -460,13 +597,19 @@ class _TestsScreenState extends State<TestsScreen> {
                                 );
                                 if (compact) {
                                   return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
                                           badge,
                                           const SizedBox(width: 12),
-                                          Expanded(child: Text('${r['title']}', style: t.titleMedium)),
+                                          Expanded(
+                                            child: Text(
+                                              '${r['title']}',
+                                              style: t.titleMedium,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                       const SizedBox(height: 10),
@@ -478,7 +621,8 @@ class _TestsScreenState extends State<TestsScreen> {
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(99),
                                         child: LinearProgressIndicator(
-                                          value: (asInt(r['scorePct']) / 100).clamp(0, 1),
+                                          value: (asInt(r['scorePct']) / 100)
+                                              .clamp(0, 1),
                                           minHeight: 6,
                                           backgroundColor: AppColors.bgLow,
                                           color: AppColors.accent,
@@ -500,7 +644,11 @@ class _TestsScreenState extends State<TestsScreen> {
                         ),
                       ),
                     const SizedBox(height: 12),
-                    _DailyPerformance(stats: _stats, days: days, maxBar: maxBar),
+                    _DailyPerformance(
+                      stats: _stats,
+                      days: days,
+                      maxBar: maxBar,
+                    ),
                   ],
                 ],
               ),
@@ -511,7 +659,9 @@ class _TestsScreenState extends State<TestsScreen> {
               child: FloatingActionButton(
                 onPressed: _openCustom,
                 backgroundColor: AppColors.accent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: const Icon(Icons.add, color: Colors.white),
               ),
             ),
@@ -604,7 +754,11 @@ class _ConfirmEntrySheetState extends State<_ConfirmEntrySheet> {
 }
 
 class _QuizTab extends StatelessWidget {
-  const _QuizTab({required this.label, required this.selected, required this.onTap});
+  const _QuizTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -656,22 +810,28 @@ class _PriceChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: gold ? AppColors.gold : const Color(0xFF4EDEA3).withValues(alpha: 0.25),
+        color: gold
+            ? AppColors.gold
+            : const Color(0xFF4EDEA3).withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: gold ? AppColors.deep : AppColors.success,
-              fontWeight: FontWeight.w800,
-            ),
+          color: gold ? AppColors.deep : AppColors.success,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
 }
 
 class _DailyPerformance extends StatelessWidget {
-  const _DailyPerformance({required this.stats, required this.days, required this.maxBar});
+  const _DailyPerformance({
+    required this.stats,
+    required this.days,
+    required this.maxBar,
+  });
   final Map<String, dynamic>? stats;
   final List<Map<String, dynamic>> days;
   final int maxBar;
@@ -681,13 +841,18 @@ class _DailyPerformance extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: const Color(0xFFF2F4F6), borderRadius: BorderRadius.circular(32)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F4F6),
+        borderRadius: BorderRadius.circular(32),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(child: Text('Daily Performance', style: t.headlineSmall)),
+              Expanded(
+                child: Text('Daily Performance', style: t.headlineSmall),
+              ),
               Text(
                 '${stats?['avgScore'] ?? '—'}',
                 style: t.headlineMedium?.copyWith(color: AppColors.accent),
@@ -706,10 +871,18 @@ class _DailyPerformance extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
                       child: Container(
-                        height: ((asInt(d['scorePct']) / (maxBar == 0 ? 1 : maxBar)) * 88).clamp(8, 88),
+                        height:
+                            ((asInt(d['scorePct']) /
+                                        (maxBar == 0 ? 1 : maxBar)) *
+                                    88)
+                                .clamp(8, 88),
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(alpha: d['scorePct'] == null ? 0.12 : 0.85),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                          color: AppColors.accent.withValues(
+                            alpha: d['scorePct'] == null ? 0.12 : 0.85,
+                          ),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(8),
+                          ),
                         ),
                       ),
                     ),
@@ -723,12 +896,18 @@ class _DailyPerformance extends StatelessWidget {
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('ACCURACY', style: t.labelMedium),
-                      Text('${stats?['accuracy'] ?? '—'}%', style: t.titleLarge?.copyWith(color: AppColors.success)),
+                      Text(
+                        '${stats?['accuracy'] ?? '—'}%',
+                        style: t.titleLarge?.copyWith(color: AppColors.success),
+                      ),
                     ],
                   ),
                 ),
@@ -737,12 +916,18 @@ class _DailyPerformance extends StatelessWidget {
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('WEAK AREA', style: t.labelMedium),
-                      Text('${stats?['weakSubject'] ?? '—'}', style: t.titleLarge?.copyWith(color: AppColors.danger)),
+                      Text(
+                        '${stats?['weakSubject'] ?? '—'}',
+                        style: t.titleLarge?.copyWith(color: AppColors.danger),
+                      ),
                     ],
                   ),
                 ),
@@ -828,7 +1013,8 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
 
   void _onLifecycle(AppLifecycleState state) {
     if (!_attempting || _result != null) return;
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _reportAppSwitch();
     }
   }
@@ -843,14 +1029,21 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
       );
       final data = res['data'] as Map<String, dynamic>?;
       if (data != null && mounted) {
-        setState(() => _appSwitchCount = (data['appSwitchCount'] as num?)?.toInt() ?? _appSwitchCount);
+        setState(
+          () => _appSwitchCount =
+              (data['appSwitchCount'] as num?)?.toInt() ?? _appSwitchCount,
+        );
       }
     } catch (_) {}
   }
 
   Future<bool> _loadResult() async {
     try {
-      final res = await widget.api.request('GET', '/api/v1/tests/${widget.testId}/result', auth: true);
+      final res = await widget.api.request(
+        'GET',
+        '/api/v1/tests/${widget.testId}/result',
+        auth: true,
+      );
       if (!mounted) return false;
       setState(() {
         _result = res['data'] as Map<String, dynamic>;
@@ -872,8 +1065,11 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
   Future<void> _poll() async {
     if (await _loadResult()) return;
     try {
-      final wait =
-          await widget.api.request('GET', '/api/v1/tests/${widget.testId}/waiting-room', auth: true);
+      final wait = await widget.api.request(
+        'GET',
+        '/api/v1/tests/${widget.testId}/waiting-room',
+        auth: true,
+      );
       final data = wait['data'] as Map<String, dynamic>;
       if (!mounted) return;
       setState(() => _waiting = data);
@@ -899,7 +1095,8 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
           setState(() {
             _attempting = true;
             _questions = sessionData['questions'] as List<dynamic>? ?? [];
-            _appSwitchCount = (sessionData['appSwitchCount'] as num?)?.toInt() ?? 0;
+            _appSwitchCount =
+                (sessionData['appSwitchCount'] as num?)?.toInt() ?? 0;
             _remaining = (sessionData['remainingSeconds'] as num?)?.toInt();
           });
           _startTicker();
@@ -923,7 +1120,11 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
         'PATCH',
         '/api/v1/tests/${widget.testId}/answers',
         auth: true,
-        body: {'mcqId': id, 'selectedOption': option, 'deviceId': widget.deviceId},
+        body: {
+          'mcqId': id,
+          'selectedOption': option,
+          'deviceId': widget.deviceId,
+        },
       );
     } catch (_) {}
   }
@@ -933,16 +1134,24 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
       final body = {
         'answers': _questions.map((q) {
           final m = q as Map<String, dynamic>;
-          return {'mcqId': m['id'], 'selectedOption': _answers[m['id'] as String]};
+          return {
+            'mcqId': m['id'],
+            'selectedOption': _answers[m['id'] as String],
+          };
         }).toList(),
         'deviceId': widget.deviceId,
         'appSwitchCount': _appSwitchCount,
         'autoSubmit': auto,
       };
-      final res =
-          await widget.api.request('POST', '/api/v1/tests/${widget.testId}/submit', auth: true, body: body);
+      final res = await widget.api.request(
+        'POST',
+        '/api/v1/tests/${widget.testId}/submit',
+        auth: true,
+        body: body,
+      );
       setState(() => _result = res['data'] as Map<String, dynamic>);
-      if (mounted) showRewardsToast(context, _result?['rewards'] as Map<String, dynamic>?);
+      if (mounted)
+        showRewardsToast(context, _result?['rewards'] as Map<String, dynamic>?);
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     }
@@ -964,199 +1173,267 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
               'Your answers are saved. The timer keeps running. Resume from Quiz anytime.',
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Leave')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Stay'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Leave'),
+              ),
             ],
           ),
         );
         if (ok == true && mounted) Navigator.of(context).pop();
       },
       child: Scaffold(
-      body: AppAtmosphere(
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                    ),
-                    Expanded(
-                      child: Text(
-                        _result?['title']?.toString() ??
-                            _waiting?['title']?.toString() ??
-                            (widget.viewResultOnly ? 'Analysis' : 'Live test'),
-                        style: t.headlineSmall,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (_attempting && _result == null && _remaining != null)
-                      Text(
-                        '${(_remaining! ~/ 60).toString().padLeft(2, '0')}:${(_remaining! % 60).toString().padLeft(2, '0')}',
-                        style: t.titleLarge?.copyWith(color: AppColors.accent),
-                      ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final w = constraints.maxWidth;
-                    final pad = w < 380 ? 14.0 : w > 720 ? 28.0 : 20.0;
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 920),
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(pad, 12, pad, 20),
-                          child: _result != null
-                              ? FadeRise(
-                                  child: _ResultAnalysis(
-                                    result: _result!,
-                                    onDone: () => Navigator.of(context).maybePop(),
-                                  ),
-                                )
-                              : widget.viewResultOnly
-                                  ? FadeRise(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const SizedBox(height: 12),
-                                          Text('Analysis', style: t.labelMedium),
-                                          const SizedBox(height: 16),
-                                          if (_loadingResult)
-                                            const Padding(
-                                              padding: EdgeInsets.only(top: 24),
-                                              child: Center(child: CircularProgressIndicator()),
-                                            )
-                                          else if (_error != null)
-                                            InlineError(_error!),
-                                          const Spacer(),
-                                          SecondaryButton(
-                                            label: 'Back',
-                                            onPressed: () => Navigator.of(context).maybePop(),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : !_attempting
-                                      ? FadeRise(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const Spacer(),
-                                              Text('Starts in', style: t.bodySmall),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                '${_waiting?['countdownSeconds'] ?? '—'}',
-                                                style: t.displayLarge?.copyWith(
-                                                  fontFeatures: const [FontFeature.tabularFigures()],
-                                                ),
-                                              ),
-                                              Text('seconds', style: t.bodyMedium),
-                                              const SizedBox(height: 12),
-                                              const Text('Stay on this screen. Leaving may be flagged.'),
-                                              if (_error != null) ...[
-                                                const SizedBox(height: 16),
-                                                InlineError(_error!),
-                                              ],
-                                              const Spacer(flex: 2),
-                                            ],
-                                          ),
-                                        )
-                                      : ListView(
-                                          children: [
-                                            const Padding(
-                                              padding: EdgeInsets.only(bottom: 16),
-                                              child: Text(
-                                                'Answers save as you pick. If you leave, resume from Quiz — the timer keeps running.',
-                                              ),
-                                            ),
-                                            if (_appSwitchCount > 0)
-                                              Padding(
-                                                padding: const EdgeInsets.only(bottom: 12),
-                                                child: StatusChip(
-                                                  'App switches: $_appSwitchCount',
-                                                  tone: StatusTone.danger,
-                                                ),
-                                              ),
-                                            ..._questions.map((raw) {
-                                              final q = raw as Map<String, dynamic>;
-                                              final id = q['id'] as String;
-                                              return Padding(
-                                                padding: const EdgeInsets.only(bottom: 28),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      q['question']?.toString() ?? '',
-                                                      style: t.headlineSmall?.copyWith(height: 1.4),
-                                                    ),
-                                                    const SizedBox(height: 14),
-                                                    ...['A', 'B', 'C', 'D'].map((o) {
-                                                      final selected = _answers[id] == o;
-                                                      return Padding(
-                                                        padding: const EdgeInsets.only(bottom: 8),
-                                                        child: InkWell(
-                                                          borderRadius: BorderRadius.circular(AppRadii.md),
-                                                          onTap: () => _select(id, o),
-                                                          child: AnimatedContainer(
-                                                            duration: const Duration(milliseconds: 150),
-                                                            padding: const EdgeInsets.all(14),
-                                                            decoration: BoxDecoration(
-                                                              color: selected
-                                                                  ? AppColors.accentSoft
-                                                                  : AppColors.bgElevated,
-                                                              borderRadius: BorderRadius.circular(AppRadii.md),
-                                                              border: Border.all(
-                                                                color: selected ? AppColors.accent : AppColors.line,
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                Text(
-                                                                  o,
-                                                                  style: t.titleMedium?.copyWith(
-                                                                    color: AppColors.accent,
-                                                                  ),
-                                                                ),
-                                                                const SizedBox(width: 12),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    q['option$o']?.toString() ?? '',
-                                                                    style: t.bodyLarge,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      );
-                                                    }),
-                                                  ],
-                                                ),
-                                              );
-                                            }),
-                                            PrimaryButton(label: 'Submit attempt', onPressed: _submit),
-                                            if (_error != null) ...[
-                                              const SizedBox(height: 12),
-                                              InlineError(_error!),
-                                            ],
-                                          ],
-                                        ),
+        body: AppAtmosphere(
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
                         ),
                       ),
-                    );
-                  },
+                      Expanded(
+                        child: Text(
+                          _result?['title']?.toString() ??
+                              _waiting?['title']?.toString() ??
+                              (widget.viewResultOnly
+                                  ? 'Analysis'
+                                  : 'Live test'),
+                          style: t.headlineSmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (_attempting && _result == null && _remaining != null)
+                        Text(
+                          '${(_remaining! ~/ 60).toString().padLeft(2, '0')}:${(_remaining! % 60).toString().padLeft(2, '0')}',
+                          style: t.titleLarge?.copyWith(
+                            color: AppColors.accent,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final w = constraints.maxWidth;
+                      final pad = w < 380
+                          ? 14.0
+                          : w > 720
+                          ? 28.0
+                          : 20.0;
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 920),
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(pad, 12, pad, 20),
+                            child: _result != null
+                                ? FadeRise(
+                                    child: _ResultAnalysis(
+                                      result: _result!,
+                                      onDone: () =>
+                                          Navigator.of(context).maybePop(),
+                                    ),
+                                  )
+                                : widget.viewResultOnly
+                                ? FadeRise(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 12),
+                                        Text('Analysis', style: t.labelMedium),
+                                        const SizedBox(height: 16),
+                                        if (_loadingResult)
+                                          const Padding(
+                                            padding: EdgeInsets.only(top: 12),
+                                            child: SkeletonScope(
+                                              child: Column(
+                                                children: [
+                                                  SkeletonHero(height: 160),
+                                                  SizedBox(height: 16),
+                                                  SkeletonList(count: 2),
+                                                ],
+                                              ),
+                                            ),
+                                          )
+                                        else if (_error != null)
+                                          InlineError(_error!),
+                                        const Spacer(),
+                                        SecondaryButton(
+                                          label: 'Back',
+                                          onPressed: () =>
+                                              Navigator.of(context).maybePop(),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : !_attempting
+                                ? FadeRise(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Spacer(),
+                                        Text('Starts in', style: t.bodySmall),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '${_waiting?['countdownSeconds'] ?? '—'}',
+                                          style: t.displayLarge?.copyWith(
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
+                                        ),
+                                        Text('seconds', style: t.bodyMedium),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          'Stay on this screen. Leaving may be flagged.',
+                                        ),
+                                        if (_error != null) ...[
+                                          const SizedBox(height: 16),
+                                          InlineError(_error!),
+                                        ],
+                                        const Spacer(flex: 2),
+                                      ],
+                                    ),
+                                  )
+                                : ListView(
+                                    children: [
+                                      const Padding(
+                                        padding: EdgeInsets.only(bottom: 16),
+                                        child: Text(
+                                          'Answers save as you pick. If you leave, resume from Quiz — the timer keeps running.',
+                                        ),
+                                      ),
+                                      if (_appSwitchCount > 0)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          child: StatusChip(
+                                            'App switches: $_appSwitchCount',
+                                            tone: StatusTone.danger,
+                                          ),
+                                        ),
+                                      ..._questions.map((raw) {
+                                        final q = raw as Map<String, dynamic>;
+                                        final id = q['id'] as String;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 28,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                q['question']?.toString() ?? '',
+                                                style: t.headlineSmall
+                                                    ?.copyWith(height: 1.4),
+                                              ),
+                                              const SizedBox(height: 14),
+                                              ...['A', 'B', 'C', 'D'].map((o) {
+                                                final selected =
+                                                    _answers[id] == o;
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        bottom: 8,
+                                                      ),
+                                                  child: InkWell(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          AppRadii.md,
+                                                        ),
+                                                    onTap: () => _select(id, o),
+                                                    child: AnimatedContainer(
+                                                      duration: const Duration(
+                                                        milliseconds: 150,
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            14,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: selected
+                                                            ? AppColors
+                                                                  .accentSoft
+                                                            : AppColors
+                                                                  .bgElevated,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              AppRadii.md,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: selected
+                                                              ? AppColors.accent
+                                                              : AppColors.line,
+                                                        ),
+                                                      ),
+                                                      child: Row(
+                                                        children: [
+                                                          Text(
+                                                            o,
+                                                            style: t.titleMedium
+                                                                ?.copyWith(
+                                                                  color: AppColors
+                                                                      .accent,
+                                                                ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 12,
+                                                          ),
+                                                          Expanded(
+                                                            child: Text(
+                                                              q['option$o']
+                                                                      ?.toString() ??
+                                                                  '',
+                                                              style:
+                                                                  t.bodyLarge,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              }),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                      PrimaryButton(
+                                        label: 'Submit attempt',
+                                        onPressed: _submit,
+                                      ),
+                                      if (_error != null) ...[
+                                        const SizedBox(height: 12),
+                                        InlineError(_error!),
+                                      ],
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -1183,7 +1460,9 @@ class _ResultAnalysis extends StatelessWidget {
     final award = result['award'];
     final awardMap = award is Map ? Map<String, dynamic>.from(award) : null;
     final scorePct = asInt(result['scorePct']);
-    final accuracy = result['accuracy'] == null ? null : asInt(result['accuracy']);
+    final accuracy = result['accuracy'] == null
+        ? null
+        : asInt(result['accuracy']);
     final subject = result['subject']?.toString();
     final correct = asInt(result['correctCount']);
     final incorrect = asInt(result['incorrectCount']);
@@ -1196,16 +1475,33 @@ class _ResultAnalysis extends StatelessWidget {
         final w = box.maxWidth;
         final compact = w < 380;
         final wide = w >= 700;
-        final ringSize = (compact ? 132.0 : wide ? 196.0 : 168.0).clamp(120.0, w * 0.48);
-        final scoreSize = compact ? 34.0 : wide ? 48.0 : 42.0;
+        final ringSize =
+            (compact
+                    ? 132.0
+                    : wide
+                    ? 196.0
+                    : 168.0)
+                .clamp(120.0, w * 0.48);
+        final scoreSize = compact
+            ? 34.0
+            : wide
+            ? 48.0
+            : 42.0;
         final heroPad = compact ? 18.0 : 28.0;
         final gap = compact ? 10.0 : 12.0;
 
         final hero = Container(
           width: double.infinity,
-          padding: EdgeInsets.fromLTRB(heroPad, compact ? 22 : 28, heroPad, compact ? 24 : 32),
+          padding: EdgeInsets.fromLTRB(
+            heroPad,
+            compact ? 22 : 28,
+            heroPad,
+            compact ? 24 : 32,
+          ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(compact ? AppRadii.lg : AppRadii.hero),
+            borderRadius: BorderRadius.circular(
+              compact ? AppRadii.lg : AppRadii.hero,
+            ),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1217,7 +1513,10 @@ class _ResultAnalysis extends StatelessWidget {
             children: [
               Text(
                 'YOUR SCORE',
-                style: t.labelMedium?.copyWith(color: Colors.white70, letterSpacing: 1.6),
+                style: t.labelMedium?.copyWith(
+                  color: Colors.white70,
+                  letterSpacing: 1.6,
+                ),
               ),
               SizedBox(height: compact ? 16 : 22),
               SizedBox(
@@ -1258,12 +1557,18 @@ class _ResultAnalysis extends StatelessWidget {
               SizedBox(height: compact ? 14 : 22),
               if (subject != null && subject.isNotEmpty && subject != 'null')
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white24,
                     borderRadius: BorderRadius.circular(99),
                   ),
-                  child: Text(subject.toUpperCase(), style: t.labelMedium?.copyWith(color: Colors.white)),
+                  child: Text(
+                    subject.toUpperCase(),
+                    style: t.labelMedium?.copyWith(color: Colors.white),
+                  ),
                 ),
               const SizedBox(height: 10),
               Text(
@@ -1281,10 +1586,34 @@ class _ResultAnalysis extends StatelessWidget {
 
         Widget statsGrid() {
           final tiles = [
-            _stat('Correct', correct, AppColors.success, AppColors.successSoft, compact: compact),
-            _stat('Incorrect', incorrect, AppColors.danger, AppColors.dangerSoft, compact: compact),
-            _stat('Skipped', skipped, AppColors.inkSoft, AppColors.bgLow, compact: compact),
-            _stat('Rank', result['rank'] ?? '—', AppColors.accent, AppColors.accentSoft, compact: compact),
+            _stat(
+              'Correct',
+              correct,
+              AppColors.success,
+              AppColors.successSoft,
+              compact: compact,
+            ),
+            _stat(
+              'Incorrect',
+              incorrect,
+              AppColors.danger,
+              AppColors.dangerSoft,
+              compact: compact,
+            ),
+            _stat(
+              'Skipped',
+              skipped,
+              AppColors.inkSoft,
+              AppColors.bgLow,
+              compact: compact,
+            ),
+            _stat(
+              'Rank',
+              result['rank'] ?? '—',
+              AppColors.accent,
+              AppColors.accentSoft,
+              compact: compact,
+            ),
           ];
           final cols = wide ? 4 : 2;
           return Column(
@@ -1316,10 +1645,16 @@ class _ResultAnalysis extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text('Accuracy', style: compact ? t.titleMedium : t.titleLarge)),
+                  Expanded(
+                    child: Text(
+                      'Accuracy',
+                      style: compact ? t.titleMedium : t.titleLarge,
+                    ),
+                  ),
                   Text(
                     accuracy != null ? '$accuracy%' : '—',
-                    style: (compact ? t.titleLarge : t.headlineMedium)?.copyWith(color: AppColors.success),
+                    style: (compact ? t.titleLarge : t.headlineMedium)
+                        ?.copyWith(color: AppColors.success),
                   ),
                 ],
               ),
@@ -1337,7 +1672,10 @@ class _ResultAnalysis extends StatelessWidget {
               Row(
                 children: [
                   Expanded(child: Text('Time taken', style: t.bodyMedium)),
-                  Text(_timeLabel(), style: compact ? t.titleMedium : t.titleLarge),
+                  Text(
+                    _timeLabel(),
+                    style: compact ? t.titleMedium : t.titleLarge,
+                  ),
                 ],
               ),
             ],
@@ -1378,7 +1716,10 @@ class _ResultAnalysis extends StatelessWidget {
                         statsGrid(),
                         const SizedBox(height: 16),
                         accuracyCard,
-                        if (awardCard != null) ...[const SizedBox(height: 16), awardCard],
+                        if (awardCard != null) ...[
+                          const SizedBox(height: 16),
+                          awardCard,
+                        ],
                       ],
                     ),
                   ),
@@ -1402,9 +1743,20 @@ class _ResultAnalysis extends StatelessWidget {
     );
   }
 
-  Widget _stat(String label, dynamic value, Color ink, Color bg, {required bool compact}) {
+  Widget _stat(
+    String label,
+    dynamic value,
+    Color ink,
+    Color bg, {
+    required bool compact,
+  }) {
     return Container(
-      padding: EdgeInsets.fromLTRB(compact ? 12 : 18, compact ? 14 : 18, compact ? 12 : 18, compact ? 14 : 20),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 12 : 18,
+        compact ? 14 : 18,
+        compact ? 12 : 18,
+        compact ? 14 : 20,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppRadii.lg),

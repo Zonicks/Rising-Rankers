@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { ArticleSkeleton } from "@/components/skeleton";
 import { api, mediaUrl, newsBookmarkKey, tokenKey } from "@/lib/api";
 import { emitRewards, type RewardsDelta } from "@/lib/rewards";
 
@@ -18,6 +19,7 @@ type Article = {
   publishedAt: string | null;
   timeAgo: string;
   read: boolean;
+  bookmarked?: boolean;
 };
 
 function loadBookmarks(): string[] {
@@ -64,7 +66,7 @@ export default function ArticlePage() {
     api<Article>(`/api/v1/articles/${id}`, { token })
       .then((data) => {
         setArticle(data);
-        setBookmarked(loadBookmarks().includes(data.id));
+        setBookmarked(data.bookmarked === true || loadBookmarks().includes(data.id));
         if (data.read) marked.current = true;
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Article not found"));
@@ -92,14 +94,26 @@ export default function ArticlePage() {
     return () => io.disconnect();
   }, [article, markRead]);
 
-  function toggleBookmark() {
+  async function toggleBookmark() {
     if (!article) return;
+    const token = localStorage.getItem(tokenKey);
+    const saving = !bookmarked;
+    if (token) {
+      try {
+        await api(saving ? `/api/v1/articles/${article.id}/bookmark` : `/api/v1/articles/${article.id}/bookmark`, {
+          method: saving ? "POST" : "DELETE",
+          token,
+        });
+      } catch {
+        /* local fallback */
+      }
+    }
     const next = loadBookmarks();
     const i = next.indexOf(article.id);
-    if (i >= 0) next.splice(i, 1);
-    else next.push(article.id);
+    if (saving && i < 0) next.push(article.id);
+    if (!saving && i >= 0) next.splice(i, 1);
     localStorage.setItem(newsBookmarkKey, JSON.stringify(next));
-    setBookmarked(i < 0);
+    setBookmarked(saving);
   }
 
   const src = mediaUrl(article?.imageUrl);
@@ -125,10 +139,25 @@ export default function ArticlePage() {
               </span>
             ) : null}
             <time className="text-xs font-medium text-[var(--ink-soft)]">{article.timeAgo}</time>
-            <button type="button" className="ml-auto text-lg" onClick={toggleBookmark} aria-label="Bookmark">
-              {bookmarked ? "★" : "☆"}
+            <button
+              type="button"
+              className="ml-auto text-[var(--accent)]"
+              onClick={() => void toggleBookmark()}
+              aria-label={bookmarked ? "Remove from Saved" : "Save article"}
+            >
+              <svg viewBox="0 0 24 24" className="h-6 w-6" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
+                <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z" strokeLinejoin="round" />
+              </svg>
             </button>
           </div>
+          {bookmarked ? (
+            <p className="mb-4 text-sm font-semibold text-[var(--accent)]">
+              Saved ·{" "}
+              <Link href="/app/news?range=saved" className="underline">
+                view in Saved
+              </Link>
+            </p>
+          ) : null}
           <h1 className="text-3xl font-extrabold leading-tight tracking-tight">{article.title}</h1>
           {src ? (
             <div className="mt-6 overflow-hidden rounded-[1.5rem] bg-[#eceef0]">
@@ -149,7 +178,7 @@ export default function ArticlePage() {
           )}
         </article>
       ) : !error ? (
-        <p className="mt-8 text-sm text-[var(--ink-soft)]">Loading brief…</p>
+        <ArticleSkeleton />
       ) : null}
     </AppShell>
   );

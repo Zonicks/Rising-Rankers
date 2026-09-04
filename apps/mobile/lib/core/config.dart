@@ -1,18 +1,14 @@
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
-
 class AppConfig {
-  /// Override at run time:
+  /// Hosted API (EC2). Override for local:
   /// flutter run --dart-define=API_BASE_URL=http://192.168.1.3:4000
-  ///
-  /// Physical Android devices cannot use 10.0.2.2 (emulator-only).
+  static const hostedApiBaseUrl = 'http://15.252.43.40';
+
   static String get apiBaseUrl {
     const fromEnv = String.fromEnvironment('API_BASE_URL');
-    if (fromEnv.isNotEmpty) return fromEnv;
-    // dart:io Platform is unavailable on web (Platform._operatingSystem).
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://192.168.1.3:4000';
+    if (fromEnv.isNotEmpty) {
+      return fromEnv.endsWith('/') ? fromEnv.substring(0, fromEnv.length - 1) : fromEnv;
     }
-    return 'http://localhost:4000';
+    return hostedApiBaseUrl;
   }
 
   static String? mediaUrl(String? url) {

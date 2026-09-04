@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminDialog, AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 type Program = {
@@ -61,6 +62,7 @@ export default function AchievementsPage() {
   const [form, setForm] = useState(emptyForm);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   const subjects = useMemo(() => {
     if (form.programId) {
@@ -81,6 +83,7 @@ export default function AchievementsPage() {
     ]);
     setRows(list);
     setPrograms(programList);
+    setReady(true);
   }, [router]);
 
   useEffect(() => {
@@ -172,7 +175,11 @@ export default function AchievementsPage() {
           </button>
         }
       >
-        {rows.length === 0 ? (
+        {!ready ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={4} rows={8} />
+          </SkeletonRegion>
+        ) : rows.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">
             No achievements yet. Use <strong>New badge</strong> to create one.
           </p>

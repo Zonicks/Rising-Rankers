@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
+import '../../ui/skeleton.dart';
 import '../../ui/widgets.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -36,7 +37,11 @@ class _WalletScreenState extends State<WalletScreen> {
   Future<void> _load() async {
     try {
       final bal = await widget.api.request('GET', '/api/v1/wallet', auth: true);
-      final led = await widget.api.request('GET', '/api/v1/wallet/ledger', auth: true);
+      final led = await widget.api.request(
+        'GET',
+        '/api/v1/wallet/ledger',
+        auth: true,
+      );
       setState(() {
         _balances = bal['data'] as Map<String, dynamic>;
         _ledger = led['data'] as List<dynamic>? ?? [];
@@ -91,12 +96,14 @@ class _WalletScreenState extends State<WalletScreen> {
           onRefresh: _load,
           color: AppColors.accent,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
             children: [
               const ScreenHeader(
                 overline: 'Money',
                 title: 'Wallet',
-                subtitle: 'Awards you can withdraw. Sandbox deposits for testing.',
+                subtitle:
+                    'Awards you can withdraw. Sandbox deposits for testing.',
               ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
@@ -104,59 +111,78 @@ class _WalletScreenState extends State<WalletScreen> {
               ],
               if (_msg != null) ...[
                 const SizedBox(height: 12),
-                Text(_msg!, style: t.bodyMedium?.copyWith(color: AppColors.success)),
+                Text(
+                  _msg!,
+                  style: t.bodyMedium?.copyWith(color: AppColors.success),
+                ),
               ],
               const SizedBox(height: 22),
-              WalletHero(
-                award: _balances?['award'],
-                deposited: _balances?['deposited'],
-                promo: _balances?['promo'],
-              ),
-              const SizedBox(height: 28),
-              Text('ADD FUNDS', style: t.labelMedium),
-              const SizedBox(height: 12),
-              MeritCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const FieldLabel('Sandbox amount (₹)'),
-                    TextField(
-                      controller: _amount,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                      decoration: const InputDecoration(hintText: '100'),
-                    ),
-                    const SizedBox(height: 16),
-                    PrimaryButton(
-                      label: 'Deposit (sandbox)',
-                      busy: _busy,
-                      onPressed: _deposit,
-                    ),
-                  ],
+              if (_balances == null && _error == null)
+                const WalletSkeleton()
+              else if (_balances != null) ...[
+                WalletHero(
+                  award: _balances?['award'],
+                  deposited: _balances?['deposited'],
+                  promo: _balances?['promo'],
                 ),
-              ),
-              const SizedBox(height: 28),
-              Text('LEDGER', style: t.labelMedium),
-              const SizedBox(height: 12),
-              if (_ledger.isEmpty)
+                const SizedBox(height: 28),
+                Text('ADD FUNDS', style: t.labelMedium),
+                const SizedBox(height: 12),
                 MeritCard(
-                  child: Text('No movements yet. Deposit to see the ledger come alive.', style: t.bodyMedium),
-                )
-              else
-                MeritCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: Column(
-                    children: _ledger.asMap().entries.map((e) {
-                      final r = e.value as Map<String, dynamic>;
-                      final created = r['createdAt']?.toString() ?? '';
-                      return HairlineListTile(
-                        title: '${r['type']} · ₹${r['amount']}',
-                        subtitle: created.length > 19 ? created.substring(0, 19) : created,
-                        showDivider: e.key < _ledger.length - 1,
-                      );
-                    }).toList(),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const FieldLabel('Sandbox amount (₹)'),
+                      TextField(
+                        controller: _amount,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                        ],
+                        decoration: const InputDecoration(hintText: '100'),
+                      ),
+                      const SizedBox(height: 16),
+                      PrimaryButton(
+                        label: 'Deposit (sandbox)',
+                        busy: _busy,
+                        onPressed: _deposit,
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 28),
+                Text('LEDGER', style: t.labelMedium),
+                const SizedBox(height: 12),
+                if (_ledger.isEmpty)
+                  MeritCard(
+                    child: Text(
+                      'No movements yet. Deposit to see the ledger come alive.',
+                      style: t.bodyMedium,
+                    ),
+                  )
+                else
+                  MeritCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Column(
+                      children: _ledger.asMap().entries.map((e) {
+                        final r = e.value as Map<String, dynamic>;
+                        final created = r['createdAt']?.toString() ?? '';
+                        return HairlineListTile(
+                          title: '${r['type']} · ₹${r['amount']}',
+                          subtitle: created.length > 19
+                              ? created.substring(0, 19)
+                              : created,
+                          showDivider: e.key < _ledger.length - 1,
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
             ],
           ),
         ),

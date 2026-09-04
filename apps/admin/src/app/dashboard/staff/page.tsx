@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminDialog, AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 import { ist, statusChip, statusLabel } from "../users/user-display";
 
@@ -29,6 +30,7 @@ const ROLES = [
 export default function AdminStaffPage() {
   const router = useRouter();
   const [rows, setRows] = useState<StaffRow[]>([]);
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -51,6 +53,8 @@ export default function AdminStaffPage() {
       setRows(await api<StaffRow[]>("/api/v1/admin/staff", { token }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load staff");
+    } finally {
+      setReady(true);
     }
   }
 
@@ -112,6 +116,11 @@ export default function AdminStaffPage() {
           </button>
         }
       >
+        {!ready ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={4} rows={6} />
+          </SkeletonRegion>
+        ) : (
         <div className="row-list">
           {rows.map((r) => (
             <div key={r.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -142,6 +151,7 @@ export default function AdminStaffPage() {
             </div>
           ))}
         </div>
+        )}
       </PageSection>
 
       {createOpen ? (

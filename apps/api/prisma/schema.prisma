@@ -129,6 +129,7 @@ model User {
   pointEvents     PointEvent[]
   achievements    UserAchievement[]
   articleReads    ArticleRead[]
+  articleBookmarks ArticleBookmark[]
   contentGrants   StudentContentGrant[]
   rightsRequests  DataRightsRequest[]
   rightsActionsTaken DataRightsRequest[] @relation("RightsActor")
@@ -948,6 +949,7 @@ model Article {
 
   program Program?      @relation(fields: [programId], references: [id], onDelete: SetNull)
   reads   ArticleRead[]
+  bookmarks ArticleBookmark[]
 
   @@index([status, publishedAt])
   @@index([programId, publishedAt])
@@ -964,4 +966,17 @@ model ArticleRead {
 
   @@unique([userId, articleId])
   @@index([userId, completedAt])
+}
+
+model ArticleBookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  articleId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([userId, createdAt])
 }

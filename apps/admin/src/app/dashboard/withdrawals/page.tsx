@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 type Row = {
@@ -16,10 +17,12 @@ type Row = {
 export default function AdminWithdrawalsPage() {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
+  const [ready, setReady] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function load(token: string) {
     setRows(await api<Row[]>("/api/v1/admin/withdrawals", { token }));
+    setReady(true);
   }
 
   useEffect(() => {
@@ -51,7 +54,11 @@ export default function AdminWithdrawalsPage() {
       {msg ? <p className="msg-ok mb-6">{msg}</p> : null}
 
       <PageSection title="Requests">
-        {rows.length === 0 ? (
+        {!ready ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={4} rows={8} />
+          </SkeletonRegion>
+        ) : rows.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No withdrawal requests.</p>
         ) : (
           <div className="row-list">

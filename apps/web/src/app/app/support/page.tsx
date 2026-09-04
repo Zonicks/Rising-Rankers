@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { SupportSkeleton } from "@/components/skeleton";
 import { api, tokenKey } from "@/lib/api";
 
 const CATEGORIES = [
@@ -92,14 +93,15 @@ export default function SupportPage() {
 
   if (loading) {
     return (
-      <AppShell title="Support">
-        <p className="text-sm text-[var(--muted)]">Loading support…</p>
+      <AppShell overline="Help" title="Support">
+        <SupportSkeleton />
       </AppShell>
     );
   }
 
   return (
     <AppShell
+      overline="Help"
       title="Support"
       subtitle="Report a payment, wallet, test, or account issue."
     >
@@ -111,11 +113,13 @@ export default function SupportPage() {
         .
       </p>
       {officer?.name || officer?.email ? (
-        <div className="card mb-6 p-5 text-sm text-[var(--ink-soft)]">
-          <p className="font-semibold text-[var(--ink)]">Grievance officer</p>
-          <p className="mt-1">
+        <div className="card mb-6 rounded-3xl p-5 text-sm text-[var(--ink-soft)]">
+          <p className="page-kicker">Grievance</p>
+          <p className="mt-2 font-headline font-extrabold tracking-tight text-[var(--ink)]">
             {officer.name ?? "Named officer"}
-            {officer.email ? ` · ${officer.email}` : ""}
+          </p>
+          <p className="mt-1">
+            {officer.email ?? ""}
             {officer.phone ? ` · ${officer.phone}` : ""}
           </p>
           <p className="mt-2">
@@ -127,7 +131,8 @@ export default function SupportPage() {
       {error ? <p className="msg-err mb-4">{error}</p> : null}
       {msg ? <p className="msg-ok mb-4">{msg}</p> : null}
 
-      <form onSubmit={onSubmit} className="card space-y-4 p-6">
+      <p className="page-kicker mb-3">New ticket</p>
+      <form onSubmit={onSubmit} className="card space-y-4 rounded-3xl p-6">
         <div>
           <label className="label">Category</label>
           <select
@@ -167,15 +172,13 @@ export default function SupportPage() {
         </button>
       </form>
 
-      <h2 className="mt-10 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">
-        Your tickets
-      </h2>
+      <p className="page-kicker mt-10">Your tickets</p>
       {tickets.length === 0 ? (
         <p className="mt-4 text-sm text-[var(--muted)]">No tickets yet.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {tickets.map((t) => (
-            <li key={t.id} className="card p-5">
+            <li key={t.id} className="card rounded-3xl p-5">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="font-semibold">{t.subject}</p>
                 <span className={chip[t.status] ?? "chip"}>{t.status.replaceAll("_", " ")}</span>

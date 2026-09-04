@@ -6,8 +6,13 @@ export function PublicHeader({ homeHref = "/" }: { homeHref?: string }) {
     <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
       <Link href={homeHref} className="flex items-center gap-2.5">
         <BrandMark size={36} />
-        <span className="text-[15px] font-semibold leading-tight tracking-tight text-[var(--accent)] sm:text-lg">
-          Rising Rankers
+        <span className="leading-tight">
+          <span className="block font-headline text-[15px] font-extrabold tracking-tight text-[var(--accent)] sm:text-lg">
+            Rising Rankers
+          </span>
+          <span className="mt-0.5 hidden text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--gold)] sm:block">
+            Rise. Rank. Earn.
+          </span>
         </span>
       </Link>
       <div className="flex items-center gap-4 text-sm">

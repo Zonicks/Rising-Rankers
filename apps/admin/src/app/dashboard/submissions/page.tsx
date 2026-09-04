@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 type LiveRow = {
@@ -49,6 +50,7 @@ export default function SubmissionsPage() {
   const [mcqRows, setMcqRows] = useState<McqRow[]>([]);
   const [detail, setDetail] = useState<LiveDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem(adminTokenKey);
@@ -61,6 +63,7 @@ export default function SubmissionsPage() {
       .then(([live, mcq]) => {
         setLiveRows(live);
         setMcqRows(mcq);
+        setReady(true);
       })
       .catch(() => router.replace("/signin"));
   }, [router]);
@@ -93,7 +96,7 @@ export default function SubmissionsPage() {
             setDetail(null);
           }}
         >
-          Live tests ({liveRows.length})
+          Live tests{ready ? ` (${liveRows.length})` : ""}
         </button>
         <button
           type="button"
@@ -103,7 +106,7 @@ export default function SubmissionsPage() {
             setDetail(null);
           }}
         >
-          Practice MCQs ({mcqRows.length})
+          Practice MCQs{ready ? ` (${mcqRows.length})` : ""}
         </button>
       </div>
 
@@ -155,7 +158,11 @@ export default function SubmissionsPage() {
           </PageSection>
         ) : (
           <PageSection title="Live test submissions">
-            {liveRows.length === 0 ? (
+            {!ready ? (
+              <SkeletonRegion>
+                <SkeletonTable cols={4} rows={8} compact />
+              </SkeletonRegion>
+            ) : liveRows.length === 0 ? (
               <p className="text-sm text-[var(--muted)]">No submitted live attempts yet.</p>
             ) : (
               <div className="row-list">
@@ -187,7 +194,11 @@ export default function SubmissionsPage() {
         )
       ) : (
         <PageSection title="Practice MCQ submissions">
-          {mcqRows.length === 0 ? (
+          {!ready ? (
+            <SkeletonRegion>
+              <SkeletonTable cols={4} rows={8} compact />
+            </SkeletonRegion>
+          ) : mcqRows.length === 0 ? (
             <p className="text-sm text-[var(--muted)]">No practice answers yet.</p>
           ) : (
             <div className="row-list">

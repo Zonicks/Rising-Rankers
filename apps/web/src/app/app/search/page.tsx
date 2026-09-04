@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { IconBook, IconClose, IconPerson, IconQuiz, IconSearch, IconStudy } from "@/components/icons";
+import { SearchSkeleton, SkeletonList, SkeletonRegion } from "@/components/skeleton";
 import { UnlockBookSheet } from "@/components/unlock-book-sheet";
 import { api, tokenKey } from "@/lib/api";
 
@@ -145,7 +146,7 @@ function ResultCard({
   }
 
   return (
-    <article className="card group flex flex-col gap-4 p-5 transition-shadow hover:shadow-[var(--shadow-lift)] sm:flex-row sm:items-start">
+    <article className="lift-face group flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
       <div className="flex min-w-0 flex-1 gap-4">
         <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${meta.tile}`}>
           <Icon className="h-5 w-5" />
@@ -171,9 +172,9 @@ function ResultCard({
           <span
             className={`rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-wide ${
               free
-                ? "bg-[var(--success-soft)] text-[var(--success)]"
+                ? "bg-[#FBF6DC] text-[var(--deep)]"
                 : paid
-                  ? "bg-[#fbf6dc] text-[#8a6a00]"
+                  ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                   : "bg-[var(--bg-low)] text-[var(--ink-soft)]"
             }`}
           >
@@ -188,39 +189,20 @@ function ResultCard({
 
 function HintGrid({ onPick }: { onPick: (q: string) => void }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {SEARCH_HINTS.map((h) => (
+    <div className="flex flex-wrap gap-2">
+      {SEARCH_HINTS.map((h, i) => (
         <button
           type="button"
           key={h.q}
           onClick={() => onPick(h.q)}
-          className="card flex items-start gap-3 p-5 text-left transition-transform hover:scale-[0.99]"
+          className={`rounded-full px-3.5 py-2 text-sm font-bold ${
+            i % 2 === 0
+              ? "bg-[#FBF6DC] text-[var(--deep)]"
+              : "bg-[var(--deep)] text-[var(--gold)]"
+          }`}
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-extrabold text-[var(--accent)]">
-            {initials(h.label)}
-          </span>
-          <span>
-            <span className="block font-extrabold tracking-tight">{h.q}</span>
-            <span className="mt-0.5 block text-sm text-[var(--ink-soft)]">{h.blurb}</span>
-          </span>
+          {h.q}
         </button>
-      ))}
-    </div>
-  );
-}
-
-function SkeletonList() {
-  return (
-    <div className="space-y-3" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="card flex items-start gap-4 p-5">
-          <div className="h-12 w-12 animate-pulse rounded-2xl bg-[var(--bg-low)]" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3 w-16 animate-pulse rounded-full bg-[var(--bg-low)]" />
-            <div className="h-5 w-2/3 animate-pulse rounded-lg bg-[var(--bg-high)]" />
-            <div className="h-3 w-1/2 animate-pulse rounded-lg bg-[var(--bg-low)]" />
-          </div>
-        </div>
       ))}
     </div>
   );
@@ -254,7 +236,7 @@ export default function SearchPage() {
     <Suspense
       fallback={
         <AppShell>
-          <p className="text-sm text-[var(--muted)]">Loading…</p>
+          <SearchSkeleton />
         </AppShell>
       }
     >
@@ -373,7 +355,7 @@ function SearchInner() {
   return (
     <AppShell>
       <section className="hero-progress relative p-7 sm:p-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">Catalog</p>
+        <p className="page-kicker">Catalog</p>
         <h1 className="relative z-10 mt-2 text-3xl font-extrabold tracking-tight">What do you want to learn?</h1>
         <p className="relative z-10 mt-2 max-w-md text-sm leading-relaxed text-white/75">
           Search a book, author, or topic. Add-ons outside your program show a price first.
@@ -437,7 +419,9 @@ function SearchInner() {
             </div>
             <div className="mt-6 space-y-3">
               {loading ? (
-                <SkeletonList />
+                <SkeletonRegion>
+                  <SkeletonList />
+                </SkeletonRegion>
               ) : authorBooks.books.length === 0 ? (
                 <EmptyPanel
                   title="No books for this author yet"
@@ -457,7 +441,9 @@ function SearchInner() {
             <HintGrid onPick={pickHint} />
           </div>
         ) : loading ? (
-          <SkeletonList />
+          <SkeletonRegion>
+            <SkeletonList />
+          </SkeletonRegion>
         ) : empty ? (
           <EmptyPanel
             title="No matches"

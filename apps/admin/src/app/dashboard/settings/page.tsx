@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonForm, SkeletonRegion } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 type Settings = {
@@ -57,7 +58,11 @@ export default function SettingsPage() {
   return (
     <AdminShell title="Settings" subtitle="Freemium quotas and the named grievance officer.">
       {!settings ? (
-        <p className="text-sm text-[var(--muted)]">Loading…</p>
+        <SkeletonRegion>
+          <PageSection title="Freemium">
+            <SkeletonForm fields={7} />
+          </PageSection>
+        </SkeletonRegion>
       ) : (
         <>
           {msg ? <p className="msg-ok mb-6">{msg}</p> : null}

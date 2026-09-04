@@ -11,6 +11,13 @@ const figtree = Figtree({
 export const metadata: Metadata = {
   title: "Rising Rankers Admin",
   description: "Admin console for Rising Rankers — content, tests, finance, and trust",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({

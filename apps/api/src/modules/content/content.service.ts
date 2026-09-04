@@ -913,14 +913,17 @@ export class ContentService {
     const excludeId = opts?.excludeId;
     const now = new Date();
     const include = { chapter: { select: { id: true, title: true, subject: true } } } as const;
+    const flashWhere: Prisma.FlashCardWhereInput = { status: "ACTIVE", ...scope };
+    const notCurrent = excludeId ? { id: { not: excludeId } } : {};
+    const notCurrentView = excludeId ? { flashCardId: { not: excludeId } } : {};
 
     const dueReviews = await prisma.flashCardReview.findMany({
       where: {
         userId,
-        flashCard: { status: "ACTIVE", ...scope, ...(excludeId ? { id: { not: excludeId } } : {}) },
+        flashCard: { ...flashWhere, ...notCurrent },
       },
       orderBy: { createdAt: "desc" },
-      take: 80,
+      take: 200,
       include: { flashCard: { include } },
     });
     const latest = new Map<string, (typeof dueReviews)[number]>();
@@ -933,29 +936,45 @@ export class ContentService {
     if (!card) {
       card = await prisma.flashCard.findFirst({
         where: {
-          status: "ACTIVE",
-          ...scope,
+          ...flashWhere,
+          ...notCurrent,
           reviews: { none: { userId } },
-          ...(excludeId ? { id: { not: excludeId } } : {}),
+          views: { none: { userId } },
         },
         orderBy: { createdAt: "asc" },
         include,
       });
     }
     if (!card) {
-      card = await prisma.flashCard.findFirst({
+      const row = await prisma.flashCardView.findFirst({
         where: {
-          status: "ACTIVE",
-          ...scope,
-          ...(excludeId ? { id: { not: excludeId } } : {}),
+          userId,
+          ...notCurrentView,
+          flashCard: { ...flashWhere, reviews: { none: { userId } } },
         },
+        orderBy: { viewedAt: "asc" },
+        include: { flashCard: { include } },
+      });
+      card = row?.flashCard ?? null;
+    }
+    if (!card) {
+      const row = await prisma.flashCardView.findFirst({
+        where: { userId, ...notCurrentView, flashCard: flashWhere },
+        orderBy: { viewedAt: "asc" },
+        include: { flashCard: { include } },
+      });
+      card = row?.flashCard ?? null;
+    }
+    if (!card) {
+      card = await prisma.flashCard.findFirst({
+        where: { ...flashWhere, ...notCurrent },
         orderBy: { createdAt: "asc" },
         include,
       });
     }
     if (!card) {
       card = await prisma.flashCard.findFirst({
-        where: { status: "ACTIVE", ...scope },
+        where: flashWhere,
         orderBy: { createdAt: "asc" },
         include,
       });

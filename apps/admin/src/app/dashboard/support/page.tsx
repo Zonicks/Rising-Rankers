@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 type Ticket = {
@@ -21,11 +22,13 @@ const STATUSES: Ticket["status"][] = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED
 export default function AdminSupportPage() {
   const router = useRouter();
   const [rows, setRows] = useState<Ticket[]>([]);
+  const [ready, setReady] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function load(token: string) {
     setRows(await api<Ticket[]>("/api/v1/admin/support/tickets", { token }));
+    setReady(true);
   }
 
   useEffect(() => {
@@ -57,7 +60,11 @@ export default function AdminSupportPage() {
       {error ? <p className="msg-err mb-6">{error}</p> : null}
 
       <PageSection title="Tickets">
-        {rows.length === 0 ? (
+        {!ready ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={4} rows={8} />
+          </SkeletonRegion>
+        ) : rows.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No tickets yet.</p>
         ) : (
           <div className="row-list">

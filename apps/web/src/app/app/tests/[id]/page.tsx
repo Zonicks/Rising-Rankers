@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { TestJoinSkeleton } from "@/components/skeleton";
 import { api, tokenKey } from "@/lib/api";
 import { emitRewards, type RewardsDelta } from "@/lib/rewards";
 
@@ -207,6 +208,8 @@ export default function TestRoomPage() {
         ← Tests
       </Link>
       {error ? <p className="msg-err mt-4">{error}</p> : null}
+
+      {phase === "wait" && !waiting && !error && !result ? <TestJoinSkeleton /> : null}
 
       {phase === "wait" && waiting ? (
         <div className="card mt-6 p-6 text-center sm:p-8">

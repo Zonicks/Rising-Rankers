@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../core/theme.dart';
+import 'skeleton.dart';
 
 /// Soft atmosphere wash behind screens (not a flat slab).
 class AppAtmosphere extends StatelessWidget {
@@ -11,15 +12,11 @@ class AppAtmosphere extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-        decoration: const BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE7EEFB),
-            AppColors.bg,
-            Color(0xFFFBF6DC),
-          ],
+          colors: [Color(0xFFE7EEFB), AppColors.bg, Color(0xFFFBF6DC)],
           stops: [0.0, 0.5, 1.0],
         ),
       ),
@@ -81,12 +78,16 @@ class FadeRise extends StatefulWidget {
   State<FadeRise> createState() => _FadeRiseState();
 }
 
-class _FadeRiseState extends State<FadeRise> with SingleTickerProviderStateMixin {
+class _FadeRiseState extends State<FadeRise>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 220),
   );
-  late final Animation<double> _opacity = CurvedAnimation(parent: _c, curve: Curves.easeOut);
+  late final Animation<double> _opacity = CurvedAnimation(
+    parent: _c,
+    curve: Curves.easeOut,
+  );
   late final Animation<Offset> _offset = Tween<Offset>(
     begin: const Offset(0, 0.02),
     end: Offset.zero,
@@ -198,7 +199,10 @@ class PrimaryButton extends StatelessWidget {
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : Text(label),
         ),
@@ -255,7 +259,9 @@ class InlineError extends StatelessWidget {
       ),
       child: Text(
         message,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.danger),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.danger),
       ),
     );
   }
@@ -274,11 +280,12 @@ class MoneyText extends StatelessWidget {
     final display = raw == '—' ? '—' : (raw.startsWith('₹') ? raw : '₹$raw');
     return Text(
       display,
-      style: (style ??
-              (large
-                  ? Theme.of(context).textTheme.displayMedium
-                  : Theme.of(context).textTheme.titleLarge))
-          ?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+      style:
+          (style ??
+                  (large
+                      ? Theme.of(context).textTheme.displayMedium
+                      : Theme.of(context).textTheme.titleLarge))
+              ?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
     );
   }
 }
@@ -294,7 +301,12 @@ class MetricRow extends StatelessWidget {
       children: [
         for (var i = 0; i < items.length; i++) ...[
           if (i > 0)
-            Container(width: 1, height: 36, color: AppColors.line, margin: const EdgeInsets.symmetric(horizontal: 16)),
+            Container(
+              width: 1,
+              height: 36,
+              color: AppColors.line,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+            ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,10 +354,16 @@ class HairlineListTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       if (subtitle != null) ...[
                         const SizedBox(height: 4),
-                        Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+                        Text(
+                          subtitle!,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ],
                     ],
                   ),
@@ -384,7 +402,9 @@ class StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: fg, fontWeight: FontWeight.w600),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: fg, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -419,12 +439,19 @@ class EmptyState extends StatelessWidget {
               color: AppColors.accentSoft,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.auto_awesome_rounded, color: AppColors.accent),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: AppColors.accent,
+            ),
           ),
           const SizedBox(height: 20),
           Text(title, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
-          Text(body, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            body,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: 20),
             PrimaryButton(label: actionLabel!, onPressed: onAction),
@@ -458,7 +485,11 @@ class BrandMark extends StatelessWidget {
 }
 
 class IconBurst extends StatelessWidget {
-  const IconBurst({super.key, required this.icon, this.color = AppColors.accent});
+  const IconBurst({
+    super.key,
+    required this.icon,
+    this.color = AppColors.accent,
+  });
 
   final IconData icon;
   final Color color;
@@ -582,7 +613,10 @@ class FeatureTile extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: tint,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Icon(icon, color: iconColor, size: 22),
           ),
           const SizedBox(height: 16),
@@ -633,20 +667,33 @@ class WalletHero extends StatelessWidget {
               children: [
                 Text(
                   'AWARD BALANCE',
-                  style: t.labelMedium?.copyWith(color: Colors.white70, letterSpacing: 1),
+                  style: t.labelMedium?.copyWith(
+                    color: Colors.white70,
+                    letterSpacing: 1,
+                  ),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.workspace_premium_rounded, size: 14, color: AppColors.gold),
+                      Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 14,
+                        color: AppColors.gold,
+                      ),
                       const SizedBox(width: 4),
-                      Text('Scholarship', style: t.bodySmall?.copyWith(color: Colors.white)),
+                      Text(
+                        'Scholarship',
+                        style: t.bodySmall?.copyWith(color: Colors.white),
+                      ),
                     ],
                   ),
                 ),
@@ -655,7 +702,10 @@ class WalletHero extends StatelessWidget {
             const SizedBox(height: 10),
             MoneyText(
               award,
-              style: t.displayMedium?.copyWith(color: Colors.white, letterSpacing: -0.6),
+              style: t.displayMedium?.copyWith(
+                color: Colors.white,
+                letterSpacing: -0.6,
+              ),
             ),
             const SizedBox(height: 18),
             Row(
@@ -676,9 +726,23 @@ class WalletHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white60,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 4),
-          MoneyText(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+          MoneyText(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -686,7 +750,13 @@ class WalletHero extends StatelessWidget {
 }
 
 class StudentChrome extends StatelessWidget {
-  const StudentChrome({super.key, required this.streakCount, this.onStreak, this.api, this.onSearch});
+  const StudentChrome({
+    super.key,
+    required this.streakCount,
+    this.onStreak,
+    this.api,
+    this.onSearch,
+  });
 
   final int streakCount;
   final VoidCallback? onStreak;
@@ -703,7 +773,10 @@ class StudentChrome extends StatelessWidget {
         Expanded(
           child: Text(
             AppTheme.brandName,
-            style: t.titleLarge?.copyWith(color: AppColors.accent, fontWeight: FontWeight.w800),
+            style: t.titleLarge?.copyWith(
+              color: AppColors.accent,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
         if (onSearch != null)
@@ -738,9 +811,9 @@ class StreakPill extends StatelessWidget {
           child: Text(
             '🔥 $count',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.accent,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: AppColors.accent,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ),
@@ -773,6 +846,7 @@ class _StreakSheetBodyState extends State<_StreakSheetBody> {
   int _count = 0;
   String _hint = 'Do 10 MCQs or 5 cards today to keep it.';
   List<Map<String, dynamic>> _days = [];
+  bool _ready = false;
 
   @override
   void initState() {
@@ -783,7 +857,10 @@ class _StreakSheetBodyState extends State<_StreakSheetBody> {
 
   Future<void> _load() async {
     final api = widget.api;
-    if (api == null) return;
+    if (api == null) {
+      setState(() => _ready = true);
+      return;
+    }
     try {
       final res = await api.request('GET', '/api/v1/me/streak', auth: true);
       final data = res['data'] as Map<String, dynamic>;
@@ -791,9 +868,14 @@ class _StreakSheetBodyState extends State<_StreakSheetBody> {
       setState(() {
         _count = asInt(data['streakCount'], widget.count);
         _hint = data['hint']?.toString() ?? _hint;
-        _days = (data['days'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
+        _days = (data['days'] as List<dynamic>? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .toList();
+        _ready = true;
       });
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _ready = true);
+    }
   }
 
   @override
@@ -807,10 +889,15 @@ class _StreakSheetBodyState extends State<_StreakSheetBody> {
         children: [
           Text('Streak', style: t.labelMedium),
           const SizedBox(height: 8),
-          Text('🔥 $_count day${_count == 1 ? '' : 's'}', style: t.headlineMedium),
+          Text(
+            '🔥 $_count day${_count == 1 ? '' : 's'}',
+            style: t.headlineMedium,
+          ),
           const SizedBox(height: 12),
           Text(_hint, style: t.bodyMedium),
-          if (_days.isNotEmpty) ...[
+          if (!_ready)
+            const StreakSheetSkeleton()
+          else if (_days.isNotEmpty) ...[
             const SizedBox(height: 16),
             GridView.builder(
               shrinkWrap: true,
@@ -825,7 +912,9 @@ class _StreakSheetBodyState extends State<_StreakSheetBody> {
                 final d = _days[i];
                 final date = d['date']?.toString() ?? '';
                 final qualified = d['qualified'] == true;
-                final day = date.length >= 10 ? date.substring(8, 10) : '${i + 1}';
+                final day = date.length >= 10
+                    ? date.substring(8, 10)
+                    : '${i + 1}';
                 return DecoratedBox(
                   decoration: BoxDecoration(
                     color: qualified ? AppColors.gold : const Color(0xFFECEEF0),
@@ -851,7 +940,10 @@ class _StreakSheetBodyState extends State<_StreakSheetBody> {
             style: t.bodySmall,
           ),
           const SizedBox(height: 20),
-          PrimaryButton(label: 'Got it', onPressed: () => Navigator.pop(context)),
+          PrimaryButton(
+            label: 'Got it',
+            onPressed: () => Navigator.pop(context),
+          ),
         ],
       ),
     );
@@ -860,7 +952,9 @@ class _StreakSheetBodyState extends State<_StreakSheetBody> {
 
 void showRewardsToast(BuildContext context, Map<String, dynamic>? rewards) {
   if (rewards == null || !context.mounted) return;
-  final unlocked = (rewards['unlocked'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
+  final unlocked = (rewards['unlocked'] as List<dynamic>? ?? [])
+      .whereType<Map<String, dynamic>>()
+      .toList();
   final delta = asInt(rewards['pointsDelta']);
   String? msg;
   if (unlocked.isNotEmpty) {

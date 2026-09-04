@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/brand";
+import { AuthStoryPanel } from "@/components/auth-story";
 import { api, tokenKey } from "@/lib/api";
 
 export default function AuthPage() {
@@ -12,6 +13,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -42,27 +44,9 @@ export default function AuthPage() {
 
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
-      <section className="relative hidden overflow-hidden bg-[var(--deep)] px-12 py-16 text-white lg:flex lg:flex-col lg:justify-between">
-        <div
-          className="pointer-events-none absolute -top-24 -right-16 h-80 w-80 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(30,79,196,0.55), transparent 70%)" }}
-        />
-        <div>
-          <Link href="/" className="flex items-center gap-3">
-            <BrandMark size={48} />
-            <p className="font-headline text-2xl font-extrabold tracking-tight">Rising Rankers</p>
-          </Link>
-          <h1 className="mt-16 max-w-sm text-4xl font-semibold tracking-tight">
-            Your practice, tests, and awards in one place.
-          </h1>
-          <p className="mt-4 max-w-sm text-white/70">
-            Sign in to continue flash cards, MCQs, live contests, and your wallet.
-          </p>
-        </div>
-        <p className="text-sm text-white/45">Student portal · Day-1</p>
-      </section>
+      <AuthStoryPanel />
 
-      <section className="flex items-center justify-center px-6 py-16">
+      <section className="flex items-center justify-center bg-[var(--bg)] px-6 py-16">
         <div className="animate-fade-rise w-full max-w-md">
           <Link href="/" className="mb-8 flex items-center gap-3 lg:hidden">
             <BrandMark size={40} />
@@ -76,7 +60,7 @@ export default function AuthPage() {
           </h2>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
             {mode === "signin"
-              ? "Use the email you registered with."
+              ? "Your cards, tests, and awards are waiting."
               : "Create an account, then we’ll set up your curriculum."}
           </p>
 
@@ -95,7 +79,7 @@ export default function AuthPage() {
             ))}
           </div>
 
-          <form onSubmit={onSubmit} className="card mt-6 space-y-4 p-6">
+          <form onSubmit={onSubmit} className="card mt-6 space-y-4 p-6 shadow-[var(--shadow-lift)]">
             {mode === "signup" ? (
               <div>
                 <label className="label" htmlFor="fullName">
@@ -129,23 +113,48 @@ export default function AuthPage() {
               <label className="label" htmlFor="password">
                 Password
               </label>
-              <input
-                id="password"
-                className="field"
-                placeholder="At least 8 characters"
-                type="password"
-                required
-                minLength={8}
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  className="field pr-12"
+                  placeholder="At least 8 characters"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={8}
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-[var(--muted)]"
+                  onClick={() => setShowPassword((v) => !v)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
             {error ? <p className="msg-err">{error}</p> : null}
             <button disabled={busy} className="btn-primary w-full">
               {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
             </button>
           </form>
+
+          <p className="mt-5 text-center text-xs leading-relaxed text-[var(--muted)]">
+            By continuing you agree to Rising Rankers’{" "}
+            <Link href="/legal/terms" className="font-semibold text-[var(--accent)] underline-offset-2 hover:underline">
+              terms
+            </Link>
+            ,{" "}
+            <Link href="/legal/privacy" className="font-semibold text-[var(--accent)] underline-offset-2 hover:underline">
+              privacy
+            </Link>
+            , and{" "}
+            <Link href="/legal/fair-play" className="font-semibold text-[var(--accent)] underline-offset-2 hover:underline">
+              fair play
+            </Link>{" "}
+            rules.
+          </p>
         </div>
       </section>
     </main>

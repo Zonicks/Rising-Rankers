@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminDialog, AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { API_URL, adminTokenKey, api } from "@/lib/api";
 
 type Program = { id: string; name: string };
@@ -47,6 +48,7 @@ export default function NewsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [ready, setReady] = useState(false);
 
   const load = useCallback(async () => {
     const token = localStorage.getItem(adminTokenKey);
@@ -60,6 +62,7 @@ export default function NewsPage() {
     ]);
     setRows(articles);
     setPrograms(programList);
+    setReady(true);
   }, [router]);
 
   useEffect(() => {
@@ -183,7 +186,11 @@ export default function NewsPage() {
           </button>
         }
       >
-        {rows.length === 0 ? (
+        {!ready ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={4} rows={8} />
+          </SkeletonRegion>
+        ) : rows.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No articles yet.</p>
         ) : (
           <div className="row-list">

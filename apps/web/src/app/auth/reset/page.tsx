@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/brand";
+import { AuthStoryPanel } from "@/components/auth-story";
 import { api } from "@/lib/api";
 
 function ResetForm() {
@@ -38,25 +39,12 @@ function ResetForm() {
 
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
-      <section className="relative hidden overflow-hidden bg-[var(--deep)] px-12 py-16 text-white lg:flex lg:flex-col lg:justify-between">
-        <div
-          className="pointer-events-none absolute -top-24 -right-16 h-80 w-80 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(30,79,196,0.55), transparent 70%)" }}
-        />
-        <div>
-          <Link href="/" className="flex items-center gap-3">
-            <BrandMark size={48} />
-            <p className="font-headline text-2xl font-extrabold tracking-tight">Rising Rankers</p>
-          </Link>
-          <h1 className="mt-16 max-w-sm text-4xl font-semibold tracking-tight">
-            Choose a new password.
-          </h1>
-          <p className="mt-4 max-w-sm text-white/70">
-            This link works once and expires in an hour. After you save, sign in again.
-          </p>
-        </div>
-        <p className="text-sm text-white/45">Student portal · Password reset</p>
-      </section>
+      <AuthStoryPanel
+        rotating={false}
+        overline="Password"
+        title="Choose a new password."
+        body="This link works once and expires in an hour. After you save, sign in again."
+      />
 
       <section className="flex items-center justify-center px-6 py-16">
         <div className="animate-fade-rise w-full max-w-md">

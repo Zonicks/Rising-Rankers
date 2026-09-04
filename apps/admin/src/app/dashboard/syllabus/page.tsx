@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminDialog, AdminShell } from "@/components/admin-shell";
+import { Bone, SkeletonRegion, SkeletonTree } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 type Kind = "program" | "subject" | "book" | "topic" | "chapter" | "category" | "subcategory";
@@ -67,6 +68,7 @@ export default function SyllabusPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [childName, setChildName] = useState("");
   const [programName, setProgramName] = useState("");
   const [editOpen, setEditOpen] = useState(false);
@@ -121,6 +123,7 @@ export default function SyllabusPage() {
       if (cur && findNode(data, cur.id, cur.kind)) return cur;
       return data[0] ? { id: data[0].id, kind: "program" } : null;
     });
+    setReady(true);
   }, [router]);
 
   useEffect(() => {
@@ -391,7 +394,11 @@ export default function SyllabusPage() {
               Add program
             </button>
           </div>
-          {tree.length === 0 ? (
+          {tree.length === 0 && !ready ? (
+            <SkeletonRegion>
+              <SkeletonTree />
+            </SkeletonRegion>
+          ) : tree.length === 0 ? (
             <p className="text-sm text-[var(--muted)]">No programs yet. Add one to start the tree.</p>
           ) : (
             <div className="max-h-[70vh] overflow-auto">{renderTree(tree)}</div>
@@ -399,7 +406,14 @@ export default function SyllabusPage() {
         </section>
 
         <section className="panel mt-0">
-          {!node ? (
+          {!ready ? (
+            <SkeletonRegion>
+              <Bone className="h-3 w-16" />
+              <Bone className="mt-3 h-8 w-48" />
+              <Bone className="mt-2 h-4 w-64" />
+              <Bone className="mt-6 h-10 w-32 rounded-2xl" />
+            </SkeletonRegion>
+          ) : !node ? (
             <p className="text-sm text-[var(--muted)]">Select a node in the tree.</p>
           ) : (
             <>

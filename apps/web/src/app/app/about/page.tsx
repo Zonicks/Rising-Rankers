@@ -7,12 +7,12 @@ import { ABOUT_PARAGRAPHS, APP_NAME, APP_PLATFORM, APP_VERSION } from "@/lib/abo
 
 export default function AboutPage() {
   return (
-    <AppShell title="About" subtitle={`${APP_NAME} · Version ${APP_VERSION}`}>
-      <div className="card p-6">
+    <AppShell overline="Rising Rankers" title="About" subtitle={`${APP_NAME} · Version ${APP_VERSION}`}>
+      <div className="card rounded-3xl p-6">
         <div className="flex items-center gap-4">
           <BrandMark size={56} />
           <div>
-            <h2 className="text-xl font-extrabold tracking-tight">{APP_NAME}</h2>
+            <h2 className="font-headline text-xl font-extrabold tracking-tight">{APP_NAME}</h2>
             <p className="mt-1 text-sm text-[var(--ink-soft)]">Practice. Compete. Rise.</p>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminDialog, AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable, SkeletonTree } from "@/components/skeleton";
 import { adminTokenKey, api, apiUpload } from "@/lib/api";
 import {
   SERVER_IMPORT_BYTES,
@@ -121,6 +122,7 @@ export default function ContentPage() {
   const [pendingBooks, setPendingBooks] = useState<ReturnType<typeof mapBookRows>["items"]>([]);
   const [serverFile, setServerFile] = useState<File | null>(null);
   const [createMissingPath, setCreateMissingPath] = useState(true);
+  const [ready, setReady] = useState(false);
 
   const selected = useMemo(
     () => chapters.find((c) => c.id === selectedId) ?? null,
@@ -144,6 +146,7 @@ export default function ContentPage() {
     setFlashCards(f);
     setMcqs(m.items);
     setSelectedId((prev) => prev || c[0]?.id || "");
+    setReady(true);
   }, [router, libraryFilter]);
 
   useEffect(() => {
@@ -746,7 +749,14 @@ export default function ContentPage() {
       ) : null}
 
       <PageSection title="Chapters">
-        {chapters.length === 0 ? (
+        {!ready ? (
+          <SkeletonRegion>
+            <div className="grid gap-6 lg:grid-cols-[minmax(220px,280px)_1fr]">
+              <SkeletonTree rows={8} />
+              <SkeletonTable cols={3} rows={6} compact />
+            </div>
+          </SkeletonRegion>
+        ) : chapters.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">
             No chapters yet. Use <strong>Add chapter</strong> to start.
           </p>
@@ -796,7 +806,11 @@ export default function ContentPage() {
         </div>
 
         {libraryTab === "mcq" ? (
-          filteredMcqs.length === 0 ? (
+          !ready ? (
+            <SkeletonRegion>
+              <SkeletonTable cols={3} rows={6} compact />
+            </SkeletonRegion>
+          ) : filteredMcqs.length === 0 ? (
             <p className="text-sm text-[var(--muted)]">No MCQs yet.</p>
           ) : (
             <div className="row-list">
@@ -815,6 +829,10 @@ export default function ContentPage() {
               ))}
             </div>
           )
+        ) : !ready ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={3} rows={6} compact />
+          </SkeletonRegion>
         ) : filteredFlash.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No flash cards yet.</p>
         ) : (

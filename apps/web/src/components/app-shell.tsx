@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { api, tokenKey } from "@/lib/api";
-import { REWARDS_EVENT, type RewardsDelta } from "@/lib/rewards";
+import { OPEN_STREAK_EVENT, REWARDS_EVENT, type RewardsDelta } from "@/lib/rewards";
 import { BrandMark } from "./brand";
+import { PageHeader } from "./page-header";
 import { IconArticle, IconHome, IconPerson, IconQuiz, IconSearch, IconStudy } from "./icons";
+import { StreakSheetSkeleton } from "./skeleton";
 
 const links = [
   { href: "/app", label: "Home", exact: true, Icon: IconHome },
@@ -24,11 +26,13 @@ type StreakSheet = {
 
 export function AppShell({
   children,
+  overline,
   title,
   subtitle,
   wide,
 }: {
   children: React.ReactNode;
+  overline?: string;
   title?: string;
   subtitle?: string;
   wide?: boolean;
@@ -39,6 +43,7 @@ export function AppShell({
   const [streakCount, setStreakCount] = useState(0);
   const [streakOpen, setStreakOpen] = useState(false);
   const [sheet, setSheet] = useState<StreakSheet | null>(null);
+  const [streakReady, setStreakReady] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,8 +77,15 @@ export function AppShell({
         setToast(`+${detail!.pointsDelta} pts`);
       }
     }
+    function onOpenStreak() {
+      setStreakOpen(true);
+    }
     window.addEventListener(REWARDS_EVENT, onRewards);
-    return () => window.removeEventListener(REWARDS_EVENT, onRewards);
+    window.addEventListener(OPEN_STREAK_EVENT, onOpenStreak);
+    return () => {
+      window.removeEventListener(REWARDS_EVENT, onRewards);
+      window.removeEventListener(OPEN_STREAK_EVENT, onOpenStreak);
+    };
   }, []);
 
   useEffect(() => {
@@ -83,7 +95,10 @@ export function AppShell({
   }, [toast]);
 
   useEffect(() => {
-    if (!streakOpen) return;
+    if (!streakOpen) {
+      setStreakReady(false);
+      return;
+    }
     const token = localStorage.getItem(tokenKey);
     if (!token) return;
     api<StreakSheet>("/api/v1/me/streak", { token })
@@ -91,13 +106,9 @@ export function AppShell({
         setSheet(data);
         setStreakCount(data.streakCount);
       })
-      .catch(() => setSheet(null));
+      .catch(() => setSheet(null))
+      .finally(() => setStreakReady(true));
   }, [streakOpen]);
-
-  function signOut() {
-    localStorage.removeItem(tokenKey);
-    router.replace("/auth");
-  }
 
   function active(href: string, exact?: boolean) {
     if (exact) return pathname === href;
@@ -106,8 +117,12 @@ export function AppShell({
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <BrandMark size={48} />
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--deep)]">
+        <div
+          className="pointer-events-none absolute -top-24 -right-16 h-80 w-80 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(30,79,196,0.55), transparent 70%)" }}
+        />
+        <BrandMark size={56} />
       </div>
     );
   }
@@ -149,20 +164,12 @@ export function AppShell({
           <button type="button" className="streak-pill" onClick={() => setStreakOpen(true)}>
             🔥 {streakCount}
           </button>
-          <button onClick={signOut} className="hidden text-sm font-semibold text-[var(--ink-soft)] md:inline">
-            Sign out
-          </button>
         </div>
       </header>
       <main
         className={`animate-fade-rise mx-auto px-5 py-10 md:py-12 ${wide ? "max-w-5xl" : "max-w-[720px]"}`}
       >
-        {title ? (
-          <div className="mb-10">
-            <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
-            {subtitle ? <p className="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">{subtitle}</p> : null}
-          </div>
-        ) : null}
+        {title ? <PageHeader overline={overline} title={title} subtitle={subtitle} /> : null}
         {children}
       </main>
       <nav className="glass-dock fixed inset-x-0 bottom-0 z-30 rounded-t-3xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:hidden">
@@ -174,7 +181,7 @@ export function AppShell({
                 key={l.href}
                 href={l.href}
                 className={`flex min-w-[3.6rem] flex-col items-center rounded-2xl px-3 py-1.5 ${
-                  on ? "bg-[#e0e3e5] text-[var(--accent)]" : "text-[var(--muted)]"
+                  on ? "dock-tab-on" : "text-[var(--muted)]"
                 }`}
               >
                 <l.Icon className="h-5 w-5" />
@@ -188,14 +195,16 @@ export function AppShell({
       {streakOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
           <div className="card w-full max-w-md p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">Streak</p>
+            <p className="page-kicker">Streak</p>
             <h2 className="mt-2 text-2xl font-extrabold">
               🔥 {sheet?.streakCount ?? streakCount} day{(sheet?.streakCount ?? streakCount) === 1 ? "" : "s"}
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">
               {sheet?.hint ?? "Do 10 MCQs or 5 cards today to keep it."}
             </p>
-            {sheet?.days?.length ? (
+            {!streakReady ? (
+              <StreakSheetSkeleton />
+            ) : sheet?.days?.length ? (
               <div className="mt-5 grid grid-cols-7 gap-2">
                 {sheet.days.map((d) => {
                   const day = Number(d.date.slice(8, 10));
@@ -217,7 +226,14 @@ export function AppShell({
               A day counts when you rate 5 flashcards, answer 10 MCQs, submit a quiz or test, or finish a news
               article.
             </p>
-            <button type="button" className="btn-primary mt-6 w-full" onClick={() => setStreakOpen(false)}>
+            <button
+              type="button"
+              className="btn-primary mt-6 w-full"
+              onClick={() => {
+                setStreakOpen(false);
+                setSheet(null);
+              }}
+            >
               Got it
             </button>
           </div>

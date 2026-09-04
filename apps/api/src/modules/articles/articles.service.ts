@@ -6,7 +6,7 @@ import { prisma } from "../../infrastructure/database/prisma";
 import { AppError } from "../../shared/errors/app-error";
 import { rewardsService } from "../rewards/rewards.service";
 
-export type ArticleRange = "today" | "week" | "archive";
+export type ArticleRange = "today" | "week" | "archive" | "saved";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -142,6 +142,8 @@ export class ArticlesService {
   }
 
   async listForStudent(userId: string, range: ArticleRange = "today") {
+    if (range === "saved") return this.listSaved(userId);
+
     const visible = await this.visibleWhere(userId);
     const rows = await prisma.article.findMany({
       where: {
@@ -150,11 +152,12 @@ export class ArticlesService {
       },
       orderBy: [{ featured: "desc" }, { publishedAt: "desc" }],
     });
-    const readIds = await this.readIdSet(
-      userId,
-      rows.map((r) => r.id)
-    );
-    const articles = rows.map((row) => this.toCard(row, readIds.has(row.id)));
+    const ids = rows.map((r) => r.id);
+    const [readIds, bookmarkIds] = await Promise.all([
+      this.readIdSet(userId, ids),
+      this.bookmarkIdSet(userId, ids),
+    ]);
+    const articles = rows.map((row) => this.toCard(row, readIds.has(row.id), bookmarkIds.has(row.id)));
     const featured = articles.find((a) => a.featured) ?? null;
     return {
       range,
@@ -163,14 +166,74 @@ export class ArticlesService {
     };
   }
 
+  async listSaved(userId: string) {
+    const visible = await this.visibleWhere(userId);
+    const marks = await prisma.articleBookmark.findMany({
+      where: {
+        userId,
+        article: {
+          ...visible,
+          publishedAt: { lte: new Date() },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: { article: true },
+    });
+    const rows = marks.map((m) => m.article);
+    const readIds = await this.readIdSet(
+      userId,
+      rows.map((r) => r.id)
+    );
+    return {
+      range: "saved" as const,
+      featured: null,
+      articles: rows.map((row) => this.toCard(row, readIds.has(row.id), true)),
+    };
+  }
+
   async getForStudent(userId: string, id: string) {
     const visible = await this.visibleWhere(userId);
     const row = await prisma.article.findFirst({ where: { id, ...visible, publishedAt: { lte: new Date() } } });
     if (!row) throw new AppError("NOT_FOUND", "Article not found", 404);
-    const read = await prisma.articleRead.findUnique({
+    const [read, mark] = await Promise.all([
+      prisma.articleRead.findUnique({
+        where: { userId_articleId: { userId, articleId: id } },
+      }),
+      prisma.articleBookmark.findUnique({
+        where: { userId_articleId: { userId, articleId: id } },
+      }),
+    ]);
+    return { ...this.toCard(row, Boolean(read), Boolean(mark)), body: row.body };
+  }
+
+  async bookmark(userId: string, id: string) {
+    await this.getForStudent(userId, id);
+    await prisma.articleBookmark.upsert({
       where: { userId_articleId: { userId, articleId: id } },
+      create: { userId, articleId: id },
+      update: {},
     });
-    return { ...this.toCard(row, Boolean(read)), body: row.body };
+    return { bookmarked: true as const };
+  }
+
+  async unbookmark(userId: string, id: string) {
+    await prisma.articleBookmark.deleteMany({ where: { userId, articleId: id } });
+    return { bookmarked: false as const };
+  }
+
+  async importBookmarks(userId: string, ids: string[]) {
+    const unique = [...new Set(ids.map(String).filter(Boolean))].slice(0, 50);
+    const imported: string[] = [];
+    for (const id of unique) {
+      try {
+        await this.bookmark(userId, id);
+        imported.push(id);
+      } catch {
+        // skip unpublished / unknown
+      }
+    }
+    return { imported };
   }
 
   async markRead(userId: string, id: string) {
@@ -204,6 +267,15 @@ export class ArticlesService {
     return new Set(reads.map((r) => r.articleId));
   }
 
+  private async bookmarkIdSet(userId: string, articleIds: string[]) {
+    if (articleIds.length === 0) return new Set<string>();
+    const marks = await prisma.articleBookmark.findMany({
+      where: { userId, articleId: { in: articleIds } },
+      select: { articleId: true },
+    });
+    return new Set(marks.map((m) => m.articleId));
+  }
+
   private toCard(
     row: {
       id: string;
@@ -215,7 +287,8 @@ export class ArticlesService {
       featured: boolean;
       publishedAt: Date | null;
     },
-    read: boolean
+    read: boolean,
+    bookmarked: boolean
   ) {
     const excerpt = (row.excerpt ?? "").trim() || row.body.replace(/\s+/g, " ").trim().slice(0, 180);
     return {
@@ -228,6 +301,7 @@ export class ArticlesService {
       publishedAt: row.publishedAt?.toISOString() ?? null,
       timeAgo: relativeTime(row.publishedAt),
       read,
+      bookmarked,
     };
   }
 }
@@ -251,7 +325,7 @@ function istStart(key: string) {
   return new Date(`${key}T00:00:00+05:30`);
 }
 
-function rangeWindow(range: ArticleRange) {
+function rangeWindow(range: Exclude<ArticleRange, "saved">) {
   const weekStart = istStart(shiftIst(istKey(), -6));
   if (range === "today") return { gte: istStart(istKey()) };
   if (range === "week") return { gte: weekStart };

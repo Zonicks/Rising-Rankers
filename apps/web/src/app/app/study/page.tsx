@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { StudySkeleton } from "@/components/skeleton";
 import { UnlockBookSheet } from "@/components/unlock-book-sheet";
 import { api, tokenKey } from "@/lib/api";
 
@@ -71,7 +72,7 @@ export default function StudyPage() {
     <Suspense
       fallback={
         <AppShell wide>
-          <p className="text-sm text-[var(--muted)]">Loading…</p>
+          <StudySkeleton />
         </AppShell>
       }
     >
@@ -114,6 +115,24 @@ function StudyInner() {
   );
 
   const rec = data?.recommended;
+  const waitingOnBook = Boolean(bookId) && !book && !error;
+  const waitingOnTracker = !data && !error;
+
+  if (!data && error) {
+    return (
+      <AppShell wide>
+        <p className="msg-err">{error}</p>
+      </AppShell>
+    );
+  }
+
+  if (waitingOnTracker || waitingOnBook) {
+    return (
+      <AppShell wide>
+        <StudySkeleton />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell wide>
@@ -124,7 +143,8 @@ function StudyInner() {
           <Link href="/app/search" className="text-sm font-semibold text-[var(--accent)]">
             ← Search
           </Link>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{book.title}</h1>
+          <p className="page-kicker mt-4">{book.inProgram ? "In syllabus" : "Add-on"}</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{book.title}</h1>
           <p className="mt-2 text-[var(--ink-soft)]">{book.subtitle}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="chip">{book.inProgram ? "In your syllabus" : `${book.subjectName} add-on`}</span>
@@ -148,12 +168,13 @@ function StudyInner() {
           <Link href="/app/study" className="text-sm font-semibold text-[var(--accent)]">
             ← All subjects
           </Link>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{focused.name}</h1>
+          <p className="page-kicker mt-4">{focused.addon ? "Add-on" : "Subject"}</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{focused.name}</h1>
           {focused.blurb ? <p className="mt-2 text-[var(--ink-soft)]">{focused.blurb}</p> : null}
         </div>
       ) : (
         <section className="hero-progress p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">Overall preparation</p>
+          <p className="page-kicker">Overall preparation</p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-5xl font-extrabold">{data?.completion.pct ?? 0}%</span>
             <span className="text-sm text-white/70">Syllabus covered</span>
@@ -241,10 +262,34 @@ function StudyInner() {
         </section>
       ) : (
         <>
+          {rec ? (
+            <section className="hero-progress relative mt-8 p-6 sm:p-7">
+              <p className="page-kicker">Recommended</p>
+              <h3 className="relative mt-3 font-headline text-xl font-extrabold tracking-tight sm:text-2xl">
+                {rec.title}
+              </h3>
+              <p className="relative mt-2 text-sm leading-relaxed text-white/75">
+                {rec.reason} · {rec.subjectName}
+              </p>
+              <div className="relative mt-5 flex gap-2">
+                <Link
+                  href={`/app/mcq?chapterId=${rec.chapterId}`}
+                  className="inline-flex flex-1 items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-bold text-[var(--accent)] shadow-xl"
+                >
+                  MCQ
+                </Link>
+                <Link
+                  href={`/app/flashcards?chapterId=${rec.chapterId}`}
+                  className="inline-flex flex-1 items-center justify-center rounded-2xl bg-white/15 px-4 py-3 text-sm font-bold text-white"
+                >
+                  Flashcards
+                </Link>
+              </div>
+            </section>
+          ) : null}
+
           <section className="mt-10">
-            <div className="mb-5 flex items-center justify-between px-1">
-              <h2 className="text-xl font-bold">Core Subjects</h2>
-            </div>
+            <p className="page-kicker mb-4">Core subjects</p>
             <div className="grid gap-5 md:grid-cols-2">
               {(data?.subjects ?? []).length === 0 ? (
                 <div className="card p-6 md:col-span-2">
@@ -264,7 +309,7 @@ function StudyInner() {
               ) : null}
               {(data?.subjects ?? []).map((s) => (
                 <div key={s.id} className="card p-6">
-                  <div className="mb-5 flex items-start justify-between">
+                  <div className="mb-4 flex items-start justify-between">
                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent)]">
                       {initials(s.name)}
                     </span>
@@ -272,14 +317,14 @@ function StudyInner() {
                       className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
                         s.completionPct >= 50
                           ? "bg-[#4edea3]/25 text-[#027a48]"
-                          : "bg-[#eceef0] text-[var(--ink-soft)]"
+                          : "bg-[var(--accent-soft)] text-[var(--accent)]"
                       }`}
                     >
                       {s.completionPct}% Done
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold">{s.name}</h3>
-                  {s.addon ? <span className="chip mt-2">Add-on</span> : null}
+                  <p className="page-kicker">{s.addon ? "Add-on" : "Subject"}</p>
+                  <h3 className="mt-1 text-lg font-bold">{s.name}</h3>
                   <p className="mt-1 mb-6 min-h-[2.5rem] text-sm leading-relaxed text-[var(--ink-soft)]">
                     {s.blurb ?? (s.addon ? "Paid add-on from another program." : "Practice this subject from your curriculum.")}
                   </p>
@@ -305,21 +350,6 @@ function StudyInner() {
               ))}
             </div>
           </section>
-
-          {rec ? (
-            <section className="mt-10 rounded-[2rem] bg-[#f2f4f6] p-8">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">
-                Recommended for you
-              </p>
-              <h3 className="mt-3 text-lg font-bold">{rec.title}</h3>
-              <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                {rec.reason} · {rec.subjectName}
-              </p>
-              <Link href={`/app/mcq?chapterId=${rec.chapterId}`} className="btn-primary mt-5 inline-flex">
-                Start this chapter
-              </Link>
-            </section>
-          ) : null}
         </>
       )}
 

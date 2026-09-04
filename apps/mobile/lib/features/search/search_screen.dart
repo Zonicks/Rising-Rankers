@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
+import '../../ui/skeleton.dart';
 import '../../ui/widgets.dart';
 import '../flashcards/flashcards_screen.dart';
 import '../mcq/mcq_screen.dart';
@@ -11,8 +12,9 @@ import '../catalog/unlock_book_sheet.dart';
 void openCatalogSearch(BuildContext context, ApiClient api) {
   Navigator.of(context).push(
     PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          Scaffold(body: AppAtmosphere(child: SearchScreen(api: api))),
+      pageBuilder: (context, animation, secondaryAnimation) => Scaffold(
+        body: AppAtmosphere(child: SearchScreen(api: api)),
+      ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           FadeTransition(opacity: animation, child: child),
       transitionDuration: const Duration(milliseconds: 240),
@@ -47,7 +49,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _onChanged(String value) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () => _search(value.trim()));
+    _debounce = Timer(
+      const Duration(milliseconds: 300),
+      () => _search(value.trim()),
+    );
   }
 
   Future<void> _search(String q) async {
@@ -85,11 +90,17 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _openAuthor(String id) async {
     try {
-      final res = await widget.api.request('GET', '/api/v1/catalog/authors/$id/books', auth: true);
+      final res = await widget.api.request(
+        'GET',
+        '/api/v1/catalog/authors/$id/books',
+        auth: true,
+      );
       final data = res['data'] as Map<String, dynamic>;
       setState(() {
         _author = data['author'] as Map<String, dynamic>?;
-        _authorBooks = (data['books'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
+        _authorBooks = (data['books'] as List<dynamic>? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .toList();
       });
     } on ApiException catch (e) {
       setState(() => _error = e.message);
@@ -100,7 +111,9 @@ class _SearchScreenState extends State<SearchScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          body: AppAtmosphere(child: McqScreen(api: widget.api, chapterId: chapterId)),
+          body: AppAtmosphere(
+            child: McqScreen(api: widget.api, chapterId: chapterId),
+          ),
         ),
       ),
     );
@@ -110,7 +123,9 @@ class _SearchScreenState extends State<SearchScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          body: AppAtmosphere(child: FlashcardsScreen(api: widget.api, chapterId: chapterId)),
+          body: AppAtmosphere(
+            child: FlashcardsScreen(api: widget.api, chapterId: chapterId),
+          ),
         ),
       ),
     );
@@ -152,7 +167,9 @@ class _SearchScreenState extends State<SearchScreen> {
         await _search('${hit['title']}');
         return;
       }
-      final bookId = kind == 'chapter' ? '${hit['bookId'] ?? ''}' : '${hit['id']}';
+      final bookId = kind == 'chapter'
+          ? '${hit['bookId'] ?? ''}'
+          : '${hit['id']}';
       if (bookId.isEmpty || bookId == 'null') return;
       final ok = await showUnlockBookSheet(context, widget.api, bookId);
       if (ok && mounted) _openStudy(bookId: bookId);
@@ -171,7 +188,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   List<Map<String, dynamic>> _list(String key) {
-    return (_data?[key] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
+    return (_data?[key] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
   }
 
   bool get _empty {
@@ -197,7 +216,12 @@ class _SearchScreenState extends State<SearchScreen> {
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
                 Expanded(
-                  child: Text('Search', style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                  child: Text(
+                    'Search',
+                    style: t.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -218,12 +242,18 @@ class _SearchScreenState extends State<SearchScreen> {
                 children: [
                   Text(
                     'CATALOG',
-                    style: t.labelMedium?.copyWith(color: Colors.white70, letterSpacing: 1.6),
+                    style: t.labelMedium?.copyWith(
+                      color: Colors.white70,
+                      letterSpacing: 1.6,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'What do you want to learn?',
-                    style: t.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                    style: t.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -241,7 +271,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     style: t.bodyLarge?.copyWith(color: AppColors.ink),
                     decoration: InputDecoration(
                       hintText: 'Try Laxmikanth, Spectrum, or HC Verma',
-                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.muted),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.muted,
+                      ),
                       suffixIcon: _controller.text.isEmpty
                           ? null
                           : IconButton(
@@ -249,7 +282,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                 _controller.clear();
                                 _search('');
                               },
-                              icon: const Icon(Icons.close_rounded, color: AppColors.muted),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: AppColors.muted,
+                              ),
                             ),
                       filled: true,
                       fillColor: Colors.white,
@@ -263,7 +299,10 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(color: AppColors.gold, width: 2),
+                        borderSide: const BorderSide(
+                          color: AppColors.gold,
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
@@ -287,10 +326,10 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
             if (_loading)
               const Padding(
-                padding: EdgeInsets.only(top: 28),
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-              ),
-            if (_author != null) ...[
+                padding: EdgeInsets.only(top: 20),
+                child: SkeletonScope(child: SkeletonList(count: 3)),
+              )
+            else if (_author != null) ...[
               const SizedBox(height: 20),
               TextButton(
                 onPressed: () => setState(() {
@@ -309,7 +348,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     backgroundColor: AppColors.goldSoft,
                     child: Text(
                       initialsOf('${_author!['name']}'),
-                      style: t.titleMedium?.copyWith(color: const Color(0xFF8A6A00), fontWeight: FontWeight.w800),
+                      style: t.titleMedium?.copyWith(
+                        color: const Color(0xFF8A6A00),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -319,7 +361,12 @@ class _SearchScreenState extends State<SearchScreen> {
                       children: [
                         Text('AUTHOR', style: t.labelMedium),
                         const SizedBox(height: 4),
-                        Text('${_author!['name']}', style: t.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                        Text(
+                          '${_author!['name']}',
+                          style: t.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -345,7 +392,8 @@ class _SearchScreenState extends State<SearchScreen> {
               const SizedBox(height: 12),
               EmptyState(
                 title: 'No matches',
-                body: 'Try an author, book, or topic — or pick a demo search below.',
+                body:
+                    'Try an author, book, or topic — or pick a demo search below.',
               ),
               _hints(),
             ] else ...[
@@ -384,9 +432,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: Text(
                       initialsOf(h.$1),
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppColors.accent,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -394,13 +442,24 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(h.$1, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                        Text(
+                          h.$1,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
                         const SizedBox(height: 2),
-                        Text(h.$2, style: Theme.of(context).textTheme.bodySmall),
+                        Text(
+                          h.$2,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.north_west_rounded, color: AppColors.muted, size: 18),
+                  const Icon(
+                    Icons.north_west_rounded,
+                    color: AppColors.muted,
+                    size: 18,
+                  ),
                 ],
               ),
             ),
@@ -466,9 +525,13 @@ class _SearchScreenState extends State<SearchScreen> {
     String ctaLabel = 'Study';
     if (cta == 'add') ctaLabel = 'Add';
     if (cta == 'books') ctaLabel = 'See books';
-    if (cta == 'unlock') ctaLabel = price is num && price > 0 ? 'Unlock ₹${price.round()}' : 'Unlock';
+    if (cta == 'unlock')
+      ctaLabel = price is num && price > 0
+          ? 'Unlock ₹${price.round()}'
+          : 'Unlock';
     if (cta == 'unlock' && kind == 'subject') ctaLabel = 'See books';
-    final canTap = cta == 'study' || cta == 'books' || cta == 'add' || cta == 'unlock';
+    final canTap =
+        cta == 'study' || cta == 'books' || cta == 'add' || cta == 'unlock';
     final free = priceText == 'FREE';
 
     return Padding(
@@ -493,14 +556,18 @@ class _SearchScreenState extends State<SearchScreen> {
                     runSpacing: 6,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.accentSoft,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           kind,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: AppColors.accent,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -508,14 +575,18 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       if (inProgram)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.successSoft,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             'In syllabus',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
                                   color: AppColors.success,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -524,11 +595,19 @@ class _SearchScreenState extends State<SearchScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('${hit['title']}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  Text(
+                    '${hit['title']}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   if (hit['subtitle'] != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text('${hit['subtitle']}', style: Theme.of(context).textTheme.bodySmall),
+                      child: Text(
+                        '${hit['subtitle']}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
                 ],
               ),
@@ -539,7 +618,10 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 if (priceText != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: free ? AppColors.successSoft : AppColors.goldSoft,
                       borderRadius: BorderRadius.circular(999),
@@ -547,17 +629,19 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: Text(
                       priceText,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: free ? AppColors.success : const Color(0xFF8A6A00),
-                            fontWeight: FontWeight.w800,
-                          ),
+                        color: free
+                            ? AppColors.success
+                            : const Color(0xFF8A6A00),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 10),
                 Text(
                   ctaLabel,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: canTap ? AppColors.accent : AppColors.muted,
-                      ),
+                    color: canTap ? AppColors.accent : AppColors.muted,
+                  ),
                 ),
               ],
             ),
@@ -567,4 +651,3 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 }
-

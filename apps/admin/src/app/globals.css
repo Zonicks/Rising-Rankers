@@ -243,3 +243,9 @@ body {
   object-fit: contain;
   background: transparent;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
+}

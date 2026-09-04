@@ -50,8 +50,16 @@ export async function articlesRoutes(app: FastifyInstance) {
 
   app.get("/api/v1/articles", { preHandler: [authJwt] }, async (req, reply) => {
     const raw = (req.query as { range?: string } | undefined)?.range ?? "today";
-    const range = raw === "week" || raw === "archive" || raw === "today" ? raw : "today";
+    const range =
+      raw === "week" || raw === "archive" || raw === "today" || raw === "saved" ? raw : "today";
     const data = await articlesService.listForStudent(req.user!.sub, range);
+    return reply.send({ data });
+  });
+  app.post("/api/v1/articles/bookmarks/import", { preHandler: [authJwt] }, async (req, reply) => {
+    const ids = Array.isArray((req.body as { ids?: unknown } | undefined)?.ids)
+      ? ((req.body as { ids: unknown[] }).ids as unknown[]).map(String)
+      : [];
+    const data = await articlesService.importBookmarks(req.user!.sub, ids);
     return reply.send({ data });
   });
   app.get("/api/v1/articles/:id", { preHandler: [authJwt] }, async (req, reply) => {
@@ -62,6 +70,16 @@ export async function articlesRoutes(app: FastifyInstance) {
   app.post("/api/v1/articles/:id/read", { preHandler: [authJwt] }, async (req, reply) => {
     const { id } = req.params as { id: string };
     const data = await articlesService.markRead(req.user!.sub, id);
+    return reply.send({ data });
+  });
+  app.post("/api/v1/articles/:id/bookmark", { preHandler: [authJwt] }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const data = await articlesService.bookmark(req.user!.sub, id);
+    return reply.send({ data });
+  });
+  app.delete("/api/v1/articles/:id/bookmark", { preHandler: [authJwt] }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const data = await articlesService.unbookmark(req.user!.sub, id);
     return reply.send({ data });
   });
 }

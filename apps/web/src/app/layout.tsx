@@ -17,6 +17,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Rising Rankers",
   description: "Practice, compete, and earn scholarships — student portal",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({

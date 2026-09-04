@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { IconQuiz } from "@/components/icons";
+import { TestsSkeleton } from "@/components/skeleton";
 import { api, tokenKey } from "@/lib/api";
 
 type CatalogTest = {
@@ -134,29 +135,29 @@ export default function TestsPage() {
   const featured = catalog?.featured;
   const maxBar = Math.max(1, ...(stats?.days.map((d) => d.scorePct ?? 0) ?? [1]));
 
+  if (!catalog) {
+    return (
+      <AppShell wide>
+        {msg ? <p className="msg-err">{msg}</p> : <TestsSkeleton />}
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell wide>
-      <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-        <button
-          type="button"
-          onClick={() => setTab("available")}
-          className={`relative pb-2 text-base font-extrabold sm:text-lg ${tab === "available" ? "text-[var(--accent)]" : "text-[var(--muted)]"}`}
-        >
-          Available Tests
-          {tab === "available" ? (
-            <span className="absolute bottom-0 left-0 h-1 w-8 rounded-full bg-[var(--accent)]" />
-          ) : null}
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("results")}
-          className={`relative pb-2 text-base font-extrabold sm:text-lg ${tab === "results" ? "text-[var(--accent)]" : "text-[var(--muted)]"}`}
-        >
-          Results & Analysis
-          {tab === "results" ? (
-            <span className="absolute bottom-0 left-0 h-1 w-8 rounded-full bg-[var(--accent)]" />
-          ) : null}
-        </button>
+      <div className="grid grid-cols-2 rounded-2xl bg-[var(--accent-soft)] p-1">
+        {(["available", "results"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+              tab === t ? "bg-white text-[var(--accent)] shadow-sm" : "text-[var(--ink-soft)]"
+            }`}
+          >
+            {t === "available" ? "Available" : "Results"}
+          </button>
+        ))}
       </div>
 
       {msg ? <p className="msg-err mt-4">{msg}</p> : null}
@@ -165,18 +166,22 @@ export default function TestsPage() {
         <>
           {featured ? (
             <section className="hero-progress relative mt-8 overflow-hidden p-8">
-              <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
-                Featured challenge
-              </span>
-              <h1 className="mt-4 max-w-[16rem] text-3xl font-extrabold leading-tight">{featured.title}</h1>
-              <p className="mt-2 text-sm text-white/80">
+              <div className="relative flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-[var(--gold)] px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-[var(--deep)]">
+                  {featured.kind === "live" ? "Live" : featured.kind === "daily" ? "Daily" : "Featured"}
+                </span>
+                {featured.cta === "resume" && featured.remainingSeconds != null ? (
+                  <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-extrabold tracking-widest text-white">
+                    {formatRemain(featured.remainingSeconds)} left
+                  </span>
+                ) : null}
+              </div>
+              <h1 className="relative mt-4 max-w-[16rem] text-3xl font-extrabold leading-tight">{featured.title}</h1>
+              <p className="relative mt-2 text-sm text-white/80">
                 {featured.durationMinutes} mins · {featured.questionCount} Qs
-                {featured.cta === "resume" && featured.remainingSeconds != null
-                  ? ` · ${Math.ceil(featured.remainingSeconds / 60)} min left`
-                  : ""}
               </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[var(--gold)] px-3 py-1 text-xs font-extrabold text-[var(--deep)]">
+              <div className="relative mt-4 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-extrabold">
                   {featured.priceLabel}
                 </span>
                 {featured.awardPool ? (
@@ -189,7 +194,7 @@ export default function TestsPage() {
                 type="button"
                 disabled={busy || featured.cta === "ended"}
                 onClick={() => start(featured)}
-                className="mt-6 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[var(--accent)] shadow-xl disabled:opacity-60"
+                className="relative mt-6 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[var(--accent)] shadow-xl disabled:opacity-60"
               >
                 {labelForCta(featured.cta)}
               </button>
@@ -205,7 +210,9 @@ export default function TestsPage() {
                   type="button"
                   onClick={() => setFilter(s)}
                   className={`shrink-0 rounded-2xl px-4 py-2 text-sm font-semibold ${
-                    filter === s ? "bg-[var(--accent)] text-white" : "bg-[#f2f4f6] text-[var(--ink-soft)]"
+                    filter === s
+                      ? "bg-[var(--accent)] text-white"
+                      : "bg-white text-[var(--ink-soft)] shadow-[var(--shadow-card)]"
                   }`}
                 >
                   {s === "All" ? "All Topics" : s}
@@ -218,11 +225,11 @@ export default function TestsPage() {
             {filtered.map((t) => (
               <div
                 key={t.id}
-                className={`rounded-3xl bg-[#f2f4f6] p-5 ${t.completed && t.cta === "result" ? "opacity-70" : ""}`}
+                className={`card p-5 ${t.completed && t.cta === "result" ? "opacity-70" : ""}`}
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--accent)]">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">
                       <IconQuiz className="h-8 w-8" />
                     </div>
                     <div>
@@ -291,7 +298,7 @@ export default function TestsPage() {
                       {r.subject ?? "Mixed"} · Accuracy {r.accuracy ?? "—"}%
                       {r.rank ? ` · Rank ${r.rank}` : ""}
                     </p>
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#f2f4f6]">
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
                       <div
                         className="h-full rounded-full bg-[var(--accent)]"
                         style={{ width: `${Math.min(100, r.scorePct)}%` }}
@@ -317,26 +324,32 @@ export default function TestsPage() {
 
       {confirm ? (
         <ViewportDialog onClose={() => !busy && setConfirm(null)}>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">Confirm entry</p>
-          <h2 className="mt-2 text-xl font-bold">{confirm.title}</h2>
-          <p className="mt-3 text-sm text-[var(--ink-soft)]">
-            This will debit <strong>₹{confirm.chargeAmount}</strong> from your deposited wallet.
-          </p>
-          {payError ? <p className="msg-err mt-4">{payError}</p> : null}
-          <div className="mt-6 flex gap-3">
-            <button type="button" className="btn-secondary flex-1" disabled={busy} onClick={() => setConfirm(null)}>
-              Cancel
-            </button>
-            <button type="button" disabled={busy} className="btn-primary flex-1" onClick={() => void join(confirm)}>
-              {busy ? "Paying…" : `Pay ₹${confirm.chargeAmount}`}
-            </button>
+          <div className="bg-gradient-to-br from-[#050b18] via-[#0c1b3d] to-[#1e4fc4] px-6 py-6 text-white">
+            <p className="page-kicker">Confirm entry</p>
+            <h2 className="mt-2 font-headline text-xl font-extrabold tracking-tight">{confirm.title}</h2>
+            <p className="mt-4 font-headline text-4xl font-extrabold tracking-tight text-[var(--gold)]">
+              ₹{confirm.chargeAmount}
+            </p>
+            <p className="mt-2 text-sm text-white/70">Debited from your deposited wallet.</p>
+          </div>
+          <div className="p-6">
+            {payError ? <p className="msg-err mb-4">{payError}</p> : null}
+            <div className="flex gap-3">
+              <button type="button" className="btn-secondary flex-1" disabled={busy} onClick={() => setConfirm(null)}>
+                Cancel
+              </button>
+              <button type="button" disabled={busy} className="btn-primary flex-1" onClick={() => void join(confirm)}>
+                {busy ? "Paying…" : `Pay ₹${confirm.chargeAmount}`}
+              </button>
+            </div>
           </div>
         </ViewportDialog>
       ) : null}
 
       {customOpen ? (
         <ViewportDialog onClose={() => setCustomOpen(false)}>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">Custom quiz</p>
+          <div className="p-6">
+          <p className="page-kicker">Custom quiz</p>
           <h2 className="mt-2 text-xl font-bold">10-question practice</h2>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
             Uses your daily MCQ quota (or a paid unlock if you have none left).
@@ -361,10 +374,17 @@ export default function TestsPage() {
           <button type="button" className="mt-4 w-full text-sm font-semibold text-[var(--muted)]" onClick={() => setCustomOpen(false)}>
             Close
           </button>
+          </div>
         </ViewportDialog>
       ) : null}
     </AppShell>
   );
+}
+
+function formatRemain(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 function labelForCta(cta: CatalogTest["cta"]) {
@@ -378,11 +398,12 @@ function labelForCta(cta: CatalogTest["cta"]) {
 function DailyPerformance({ stats, maxBar }: { stats: QuizStats | null; maxBar: number }) {
   if (!stats) return null;
   return (
-    <section className="mt-10 rounded-[2.5rem] bg-[#f2f4f6] p-8">
+    <section className="card mt-10 p-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold">Daily Performance</h2>
-          <p className="text-sm text-[var(--ink-soft)]">Last 7 days of submitted tests</p>
+          <p className="page-kicker">Last 7 days</p>
+          <h2 className="mt-2 text-2xl font-extrabold">Daily Performance</h2>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">Submitted tests</p>
         </div>
         <div className="text-right">
           <p className="text-3xl font-black text-[var(--accent)]">
@@ -406,11 +427,11 @@ function DailyPerformance({ stats, maxBar }: { stats: QuizStats | null; maxBar: 
         ))}
       </div>
       <div className="mt-6 grid grid-cols-2 gap-4">
-        <div className="rounded-3xl bg-white p-5">
+        <div className="rounded-3xl bg-[var(--bg)] p-5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Accuracy</p>
           <p className="mt-1 text-xl font-bold text-[#027a48]">{stats.accuracy ?? "—"}%</p>
         </div>
-        <div className="rounded-3xl bg-white p-5">
+        <div className="rounded-3xl bg-[var(--bg)] p-5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Weak area</p>
           <p className="mt-1 text-xl font-bold text-[var(--danger)]">{stats.weakSubject ?? "—"}</p>
         </div>
@@ -438,7 +459,7 @@ function ViewportDialog({ children, onClose }: { children: ReactNode; onClose: (
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
     >
-      <div className="card w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md overflow-hidden rounded-[1.5rem] bg-white shadow-[var(--shadow-lift)]" onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>,

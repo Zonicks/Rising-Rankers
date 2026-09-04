@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell, PageSection } from "@/components/admin-shell";
+import { Bone, SkeletonRegion } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 export default function AdminSecurityPage() {
@@ -76,7 +77,13 @@ export default function AdminSecurityPage() {
       {error ? <p className="msg-err mb-4">{error}</p> : null}
       <PageSection title="Authenticator">
         {!status ? (
-          <p className="text-sm text-[var(--muted)]">Loading…</p>
+          <SkeletonRegion>
+            <div className="max-w-lg space-y-4" aria-hidden>
+              <Bone className="h-4 w-48" />
+              <Bone className="h-4 w-72" />
+              <Bone className="h-11 w-44 rounded-2xl" />
+            </div>
+          </SkeletonRegion>
         ) : (
           <div className="max-w-lg space-y-4 text-sm text-[var(--ink-soft)]">
             <p>

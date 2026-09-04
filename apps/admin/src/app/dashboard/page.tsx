@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell, PageSection, StatCard } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonStatGrid } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 const shortcuts = [
@@ -42,12 +43,18 @@ export default function DashboardPage() {
       title="Overview"
       subtitle="A quiet snapshot of platform volume — content, students, and what to do next."
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Chapters" value={counts?.chapters} hint="Question banks" />
-        <StatCard label="Students" value={counts?.users} hint="Signed-up accounts" />
-        <StatCard label="Flash cards" value={counts?.flashCards} hint="Practice prompts" />
-        <StatCard label="MCQs" value={counts?.mcqs} hint="Ready for tests" />
-      </div>
+      {counts ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Chapters" value={counts.chapters} hint="Question banks" />
+          <StatCard label="Students" value={counts.users} hint="Signed-up accounts" />
+          <StatCard label="Flash cards" value={counts.flashCards} hint="Practice prompts" />
+          <StatCard label="MCQs" value={counts.mcqs} hint="Ready for tests" />
+        </div>
+      ) : (
+        <SkeletonRegion>
+          <SkeletonStatGrid />
+        </SkeletonRegion>
+      )}
 
       <PageSection title="Suggested path">
         <div className="grid gap-3 sm:grid-cols-2">

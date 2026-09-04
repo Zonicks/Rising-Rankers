@@ -70,7 +70,11 @@ class _HomeShellState extends State<HomeShell> {
       ),
       TestsScreen(api: widget.api, onSearch: () => openCatalogSearch(context, widget.api)),
       NewsScreen(api: widget.api, onSearch: () => openCatalogSearch(context, widget.api)),
-      ProfileScreen(api: widget.api, onSignOut: widget.onSignOut),
+      ProfileScreen(
+        api: widget.api,
+        onSignOut: widget.onSignOut,
+        onSearch: () => openCatalogSearch(context, widget.api),
+      ),
     ];
 
     return Scaffold(

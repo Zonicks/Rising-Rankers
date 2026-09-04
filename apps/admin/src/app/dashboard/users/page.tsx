@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminDialog, AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 import { ist, statusChip, statusLabel } from "./user-display";
 
@@ -119,7 +120,11 @@ export default function AdminUsersPage() {
       </div>
 
       <PageSection title="Students">
-        {items.length === 0 && !loading ? (
+        {loading && items.length === 0 ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={5} rows={8} />
+          </SkeletonRegion>
+        ) : items.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No students match. Try email or mobile.</p>
         ) : (
           <div className="row-list">
@@ -155,8 +160,6 @@ export default function AdminUsersPage() {
           >
             {loading ? "Loading…" : "Load more"}
           </button>
-        ) : loading && items.length === 0 ? (
-          <p className="text-sm text-[var(--muted)]">Loading students…</p>
         ) : null}
       </PageSection>
 

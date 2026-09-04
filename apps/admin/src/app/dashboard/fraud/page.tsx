@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 type Flag = {
@@ -18,12 +19,16 @@ type Flag = {
 export default function FraudFlagsPage() {
   const router = useRouter();
   const [flags, setFlags] = useState<Flag[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem(adminTokenKey);
     if (!token) return router.replace("/signin");
     api<Flag[]>("/api/v1/admin/fraud-flags", { token })
-      .then(setFlags)
+      .then((rows) => {
+        setFlags(rows);
+        setReady(true);
+      })
       .catch(() => router.replace("/signin"));
   }, [router]);
 
@@ -33,7 +38,11 @@ export default function FraudFlagsPage() {
       subtitle="Speed anomalies, app switches, and device mismatches."
     >
       <PageSection title="Recent">
-        {flags.length === 0 ? (
+        {!ready ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={4} rows={8} compact />
+          </SkeletonRegion>
+        ) : flags.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No flags yet.</p>
         ) : (
           <div className="row-list">

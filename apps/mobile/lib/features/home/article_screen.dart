@@ -4,6 +4,7 @@ import '../../core/api_client.dart';
 import '../../core/config.dart';
 import '../../core/prefs.dart';
 import '../../core/theme.dart';
+import '../../ui/skeleton.dart';
 import '../../ui/widgets.dart';
 
 class ArticleScreen extends StatefulWidget {
@@ -41,13 +42,18 @@ class _ArticleScreenState extends State<ArticleScreen> {
 
   Future<void> _load() async {
     try {
-      final res = await widget.api.request('GET', '/api/v1/articles/${widget.articleId}', auth: true);
+      final res = await widget.api.request(
+        'GET',
+        '/api/v1/articles/${widget.articleId}',
+        auth: true,
+      );
       final marks = await AppPrefs.newsBookmarks();
       if (!mounted) return;
       final data = res['data'] as Map<String, dynamic>;
       setState(() {
         _article = data;
-        _bookmarked = marks.contains(widget.articleId);
+        _bookmarked =
+            data['bookmarked'] == true || marks.contains(widget.articleId);
         _marked = data['read'] == true;
       });
       if (data['read'] != true) {
@@ -79,10 +85,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
       final data = res['data'] as Map<String, dynamic>;
       if (!mounted) return;
       setState(() {
-        _article = {
-          ...?_article,
-          'read': true,
-        };
+        _article = {...?_article, 'read': true};
       });
       showRewardsToast(context, data['rewards'] as Map<String, dynamic>?);
     } catch (_) {
@@ -91,14 +94,47 @@ class _ArticleScreenState extends State<ArticleScreen> {
   }
 
   Future<void> _toggleBookmark() async {
+    final saving = !_bookmarked;
+    try {
+      if (saving) {
+        await widget.api.request(
+          'POST',
+          '/api/v1/articles/${widget.articleId}/bookmark',
+          auth: true,
+        );
+      } else {
+        await widget.api.request(
+          'DELETE',
+          '/api/v1/articles/${widget.articleId}/bookmark',
+          auth: true,
+        );
+      }
+    } on ApiException {
+      // Keep a local copy if the server does not know Saved yet.
+    }
     final marks = await AppPrefs.newsBookmarks();
-    if (marks.contains(widget.articleId)) {
-      marks.remove(widget.articleId);
+    if (saving) {
+      if (!marks.contains(widget.articleId)) marks.add(widget.articleId);
     } else {
-      marks.add(widget.articleId);
+      marks.remove(widget.articleId);
     }
     await AppPrefs.setNewsBookmarks(marks);
-    if (mounted) setState(() => _bookmarked = marks.contains(widget.articleId));
+    if (!mounted) return;
+    setState(() => _bookmarked = saving);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(saving ? 'Saved · view in Saved' : 'Removed from Saved'),
+        action: saving
+            ? SnackBarAction(
+                label: 'View',
+                textColor: AppColors.gold,
+                onPressed: () => Navigator.of(context).pop('saved'),
+              )
+            : null,
+      ),
+    );
   }
 
   @override
@@ -117,7 +153,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
     return SafeArea(
       child: FadeRise(
         child: article == null && _error == null
-            ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+            ? const ArticleSkeleton()
             : ListView(
                 controller: _scroll,
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
@@ -135,7 +171,10 @@ class _ArticleScreenState extends State<ArticleScreen> {
                       children: [
                         if (tag != null && tag.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.accentSoft,
                               borderRadius: BorderRadius.circular(8),
@@ -150,10 +189,22 @@ class _ArticleScreenState extends State<ArticleScreen> {
                             ),
                           ),
                         const SizedBox(width: 8),
-                        Expanded(child: Text('${article['timeAgo'] ?? ''}', style: t.bodySmall)),
+                        Expanded(
+                          child: Text(
+                            '${article['timeAgo'] ?? ''}',
+                            style: t.bodySmall,
+                          ),
+                        ),
                         IconButton(
+                          tooltip: _bookmarked
+                              ? 'Remove from Saved'
+                              : 'Save article',
                           onPressed: _toggleBookmark,
-                          icon: Icon(_bookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded),
+                          icon: Icon(
+                            _bookmarked
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_border_rounded,
+                          ),
                         ),
                       ],
                     ),
@@ -166,7 +217,8 @@ class _ArticleScreenState extends State<ArticleScreen> {
                         child: Image.network(
                           src,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox.shrink(),
                         ),
                       ),
                     ],
@@ -174,7 +226,13 @@ class _ArticleScreenState extends State<ArticleScreen> {
                     ...paragraphs.map(
                       (p) => Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(p, style: t.bodyLarge?.copyWith(height: 1.55, color: AppColors.inkSoft)),
+                        child: Text(
+                          p,
+                          style: t.bodyLarge?.copyWith(
+                            height: 1.55,
+                            color: AppColors.inkSoft,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -183,7 +241,9 @@ class _ArticleScreenState extends State<ArticleScreen> {
                           ? 'Marked as read · +2 pts'
                           : 'Stay 20 seconds or scroll to the end to count this towards your streak.',
                       style: t.bodySmall?.copyWith(
-                        color: article['read'] == true ? AppColors.accent : AppColors.muted,
+                        color: article['read'] == true
+                            ? AppColors.accent
+                            : AppColors.muted,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

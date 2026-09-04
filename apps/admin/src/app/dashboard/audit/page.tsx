@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminDialog, AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 import { entityHref, entityLabel, formatMeta, ist, recordLabel, roleLabel } from "./audit-display";
 
@@ -252,7 +253,11 @@ export default function AuditLogsPage() {
       </form>
 
       <PageSection title={activeFilterCount ? `Matching logs · ${total}` : `History · ${total}`}>
-        {items.length === 0 && !loading ? (
+        {loading && items.length === 0 ? (
+          <SkeletonRegion>
+            <SkeletonTable cols={5} rows={8} />
+          </SkeletonRegion>
+        ) : items.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">No audit entries match these filters.</p>
         ) : (
           <div className="row-list">
@@ -293,8 +298,6 @@ export default function AuditLogsPage() {
           >
             {loading ? "Loading…" : "Load more"}
           </button>
-        ) : loading && items.length === 0 ? (
-          <p className="text-sm text-[var(--muted)]">Loading audit logs…</p>
         ) : null}
       </PageSection>
 

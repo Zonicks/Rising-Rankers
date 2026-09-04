@@ -10,7 +10,7 @@ export default function FaqPage() {
       <div className="space-y-6">
         {FAQ_ITEMS.map((item) => (
           <section key={item.q}>
-            <h2 className="text-base font-semibold text-[var(--ink)]">{item.q}</h2>
+            <h2 className="font-headline text-base font-extrabold tracking-tight text-[var(--ink)]">{item.q}</h2>
             <p className="mt-2">{item.a}</p>
           </section>
         ))}

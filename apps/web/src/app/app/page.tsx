@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { IconArticle, IconCards, IconChevron, IconQuiz, IconSearch } from "@/components/icons";
+import { HomeSkeleton } from "@/components/skeleton";
 import { api, tokenKey } from "@/lib/api";
 
 type Progress = {
@@ -54,10 +55,26 @@ export default function StudentAppHome() {
   const completion = data?.completion;
   const daily = data?.daily;
 
+  if (!data && error) {
+    return (
+      <AppShell>
+        <p className="msg-err">{error}</p>
+      </AppShell>
+    );
+  }
+
+  if (!data) {
+    return (
+      <AppShell>
+        <HomeSkeleton />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <section className="hero-progress p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">Syllabus coverage</p>
+        <p className="page-kicker">Syllabus coverage</p>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Syllabus Completion</h1>
         <div className="mt-6 flex items-end justify-between">
           <span className="text-4xl font-bold">{completion?.pct ?? 0}%</span>
@@ -91,11 +108,13 @@ export default function StudentAppHome() {
           Search books and authors
         </label>
         <div className="relative">
-          <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--muted)]" />
+          <span className="pointer-events-none absolute left-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+            <IconSearch className="h-4 w-4" />
+          </span>
           <input
             id="home-search"
             name="q"
-            className="w-full rounded-2xl border border-[var(--line)] bg-[var(--bg-elevated)] py-3.5 pl-12 pr-4 text-base outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-[24px] border border-[var(--ghost)] bg-[var(--bg-elevated)] py-3.5 pl-14 pr-4 text-base shadow-[var(--shadow-card)] outline-none focus:border-[var(--accent)]"
             placeholder="Search Laxmikanth, Spectrum, or HC Verma"
           />
         </div>
@@ -103,7 +122,7 @@ export default function StudentAppHome() {
 
       <section className="mt-10">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight text-[var(--accent)]">Daily Focus</h2>
+          <h2 className="font-headline text-xl font-extrabold tracking-tight">Daily Focus</h2>
           <Link href="/app/study" className="text-sm font-semibold text-[var(--ink-soft)]">
             View schedule
           </Link>
@@ -111,20 +130,21 @@ export default function StudentAppHome() {
         <div className="grid grid-cols-2 gap-4">
           <Link
             href="/app/tests"
-            className="col-span-2 flex items-center justify-between rounded-[1.5rem] bg-[#f2f4f6] p-6 text-[var(--ink)] no-underline"
+            className="hero-progress col-span-2 flex items-center justify-between p-6 no-underline"
           >
-            <div className="flex items-center gap-5">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">
+            <div className="relative flex items-center gap-5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-[var(--gold)]">
                 <IconQuiz className="h-8 w-8" />
               </div>
               <div>
-                <p className="text-lg font-bold text-[var(--ink)]">Daily Quiz</p>
-                <p className="text-sm font-medium text-[var(--ink-soft)]">
+                <p className="page-kicker">Quiz</p>
+                <p className="mt-1 text-lg font-bold text-white">Daily Quiz</p>
+                <p className="text-sm font-medium text-white/70">
                   {daily?.quizQuestions ?? 20} Questions · {daily?.quizMinutes ?? 15} Mins
                 </p>
               </div>
             </div>
-            <IconChevron className="h-6 w-6 shrink-0 text-[var(--muted)]" />
+            <IconChevron className="relative h-6 w-6 shrink-0 text-white/70" />
           </Link>
           <Link href="/app/flashcards" className="focus-tile no-underline">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#4edea3]/20 text-[#027a48]">
@@ -153,17 +173,18 @@ export default function StudentAppHome() {
 
       <Link
         href="/app/leaderboard"
-        className="mt-8 flex items-center justify-between rounded-[1.5rem] bg-[#f2f4f6] p-5 no-underline"
+        className="card mt-8 flex items-center justify-between p-5 no-underline shadow-[var(--shadow-card)]"
       >
         <div>
-          <p className="font-bold text-[var(--ink)]">Leaderboard</p>
+          <p className="page-kicker">City board</p>
+          <p className="mt-1 font-bold text-[var(--ink)]">Leaderboard</p>
           <p className="mt-1 text-sm text-[var(--ink-soft)]">Initials, city, and points — same program.</p>
         </div>
         <IconChevron className="h-5 w-5 text-[var(--muted)]" />
       </Link>
 
       <section className="mt-10">
-        <h2 className="mb-5 text-xl font-bold tracking-tight text-[var(--accent)]">Subject Mastery</h2>
+        <h2 className="mb-5 font-headline text-xl font-extrabold tracking-tight">Subject Mastery</h2>
         <div className="space-y-3">
           {(data?.subjects ?? []).length === 0 ? (
             <p className="text-sm text-[var(--ink-soft)]">No subjects in your curriculum yet.</p>

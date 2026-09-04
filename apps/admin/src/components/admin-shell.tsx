@@ -231,16 +231,26 @@ export function StatCard({
   label,
   value,
   hint,
+  loading,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
+  loading?: boolean;
 }) {
   return (
     <div className="panel mt-0">
       <p className="text-xs font-medium text-[var(--muted)]">{label}</p>
-      <p className="metric mt-3 text-3xl font-semibold tracking-tight">{value ?? "—"}</p>
-      {hint ? <p className="mt-2 text-xs text-[var(--ink-soft)]">{hint}</p> : null}
+      {loading ? (
+        <div className="mt-3 h-9 w-20 animate-pulse rounded-md bg-[var(--line)]" aria-hidden />
+      ) : (
+        <p className="metric mt-3 text-3xl font-semibold tracking-tight">{value ?? "—"}</p>
+      )}
+      {loading ? (
+        hint ? <div className="mt-2 h-3 w-28 animate-pulse rounded-md bg-[var(--line)]" aria-hidden /> : null
+      ) : hint ? (
+        <p className="mt-2 text-xs text-[var(--ink-soft)]">{hint}</p>
+      ) : null}
     </div>
   );
 }

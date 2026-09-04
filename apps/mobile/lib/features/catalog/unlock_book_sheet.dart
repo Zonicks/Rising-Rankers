@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
+import '../../ui/skeleton.dart';
 import '../../ui/widgets.dart';
 import '../wallet/wallet_screen.dart';
 
-Future<bool> showUnlockBookSheet(BuildContext context, ApiClient api, String bookId) async {
+Future<bool> showUnlockBookSheet(
+  BuildContext context,
+  ApiClient api,
+  String bookId,
+) async {
   final ok = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: AppColors.bgElevated,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
     builder: (ctx) => _UnlockBookSheet(api: api, bookId: bookId),
   );
   return ok == true;
@@ -40,8 +47,16 @@ class _UnlockBookSheetState extends State<_UnlockBookSheet> {
 
   Future<void> _load() async {
     try {
-      final book = await widget.api.request('GET', '/api/v1/catalog/books/${widget.bookId}', auth: true);
-      final wallet = await widget.api.request('GET', '/api/v1/wallet', auth: true);
+      final book = await widget.api.request(
+        'GET',
+        '/api/v1/catalog/books/${widget.bookId}',
+        auth: true,
+      );
+      final wallet = await widget.api.request(
+        'GET',
+        '/api/v1/wallet',
+        auth: true,
+      );
       setState(() {
         _book = book['data'] as Map<String, dynamic>;
         _wallet = wallet['data'] as Map<String, dynamic>;
@@ -65,7 +80,11 @@ class _UnlockBookSheetState extends State<_UnlockBookSheet> {
       _insufficient = false;
     });
     try {
-      await widget.api.request('POST', '/api/v1/catalog/books/${widget.bookId}/unlock', auth: true);
+      await widget.api.request(
+        'POST',
+        '/api/v1/catalog/books/${widget.bookId}/unlock',
+        auth: true,
+      );
       if (!mounted) return;
       Navigator.pop(context, true);
     } on ApiException catch (e) {
@@ -82,7 +101,9 @@ class _UnlockBookSheetState extends State<_UnlockBookSheet> {
     nav.pop(false);
     nav.push(
       MaterialPageRoute(
-        builder: (_) => Scaffold(body: AppAtmosphere(child: WalletScreen(api: widget.api))),
+        builder: (_) => Scaffold(
+          body: AppAtmosphere(child: WalletScreen(api: widget.api)),
+        ),
       ),
     );
   }
@@ -99,17 +120,28 @@ class _UnlockBookSheetState extends State<_UnlockBookSheet> {
     final author = '${book?['authorName'] ?? ''}';
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        24 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(free ? 'Add to study set' : 'Confirm add-on', style: t.labelMedium),
+          Text(
+            free ? 'Add to study set' : 'Confirm add-on',
+            style: t.labelMedium,
+          ),
           const SizedBox(height: 8),
           if (book == null && _error == null)
-            const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Center(child: CircularProgressIndicator()))
+            const UnlockSheetSkeleton()
           else if (book != null) ...[
-            Text('${book['title']}', style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+            Text(
+              '${book['title']}',
+              style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
             if (author.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(author, style: t.bodyMedium),
@@ -119,7 +151,11 @@ class _UnlockBookSheetState extends State<_UnlockBookSheet> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                Chip(label: Text(inProgram ? 'In your syllabus' : '$program add-on')),
+                Chip(
+                  label: Text(
+                    inProgram ? 'In your syllabus' : '$program add-on',
+                  ),
+                ),
                 Text(
                   free ? 'FREE' : '₹$price',
                   style: t.titleMedium?.copyWith(
@@ -139,7 +175,10 @@ class _UnlockBookSheetState extends State<_UnlockBookSheet> {
           ],
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: t.bodyMedium?.copyWith(color: AppColors.danger)),
+            Text(
+              _error!,
+              style: t.bodyMedium?.copyWith(color: AppColors.danger),
+            ),
             if (_book == null)
               TextButton(onPressed: _load, child: const Text('Try again')),
           ],
@@ -153,7 +192,10 @@ class _UnlockBookSheetState extends State<_UnlockBookSheet> {
               onPressed: _busy || book == null ? null : _pay,
             ),
           const SizedBox(height: 8),
-          SecondaryButton(label: 'Cancel', onPressed: () => Navigator.pop(context, false)),
+          SecondaryButton(
+            label: 'Cancel',
+            onPressed: () => Navigator.pop(context, false),
+          ),
         ],
       ),
     );

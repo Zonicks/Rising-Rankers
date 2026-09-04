@@ -53,6 +53,9 @@ class ApiClient {
       case 'PATCH':
         res = await _client.patch(uri, headers: headers, body: encoded ?? '{}');
         break;
+      case 'DELETE':
+        res = await _client.delete(uri, headers: headers);
+        break;
       default:
         throw Exception('Unsupported method $method');
     }

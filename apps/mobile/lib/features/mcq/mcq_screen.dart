@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
+import '../../ui/skeleton.dart';
 import '../../ui/widgets.dart';
 
 class McqScreen extends StatefulWidget {
@@ -50,7 +51,11 @@ class _McqScreenState extends State<McqScreen> {
       final qs = p.isEmpty
           ? ''
           : '?${p.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
-      final res = await widget.api.request('GET', '/api/v1/mcqs/next$qs', auth: true);
+      final res = await widget.api.request(
+        'GET',
+        '/api/v1/mcqs/next$qs',
+        auth: true,
+      );
       final data = res['data'] as Map<String, dynamic>;
       setState(() => _mcq = data['mcq'] as Map<String, dynamic>);
     } on ApiException catch (e) {
@@ -81,7 +86,8 @@ class _McqScreenState extends State<McqScreen> {
         body: {'selectedOption': option},
       );
       setState(() => _result = res['data'] as Map<String, dynamic>);
-      if (mounted) showRewardsToast(context, _result?['rewards'] as Map<String, dynamic>?);
+      if (mounted)
+        showRewardsToast(context, _result?['rewards'] as Map<String, dynamic>?);
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } finally {
@@ -93,7 +99,8 @@ class _McqScreenState extends State<McqScreen> {
     if (_result == null) return AppColors.bgElevated;
     final correct = _result!['correctOption']?.toString();
     if (o == correct) return AppColors.successSoft;
-    if (o == _selected && _result!['isCorrect'] != true) return AppColors.dangerSoft;
+    if (o == _selected && _result!['isCorrect'] != true)
+      return AppColors.dangerSoft;
     return AppColors.bgElevated;
   }
 
@@ -101,7 +108,8 @@ class _McqScreenState extends State<McqScreen> {
     if (_result == null) return AppColors.line;
     final correct = _result!['correctOption']?.toString();
     if (o == correct) return AppColors.success;
-    if (o == _selected && _result!['isCorrect'] != true) return AppColors.danger;
+    if (o == _selected && _result!['isCorrect'] != true)
+      return AppColors.danger;
     return AppColors.line;
   }
 
@@ -141,10 +149,10 @@ class _McqScreenState extends State<McqScreen> {
               subtitle: 'One question. Clear feedback.',
             ),
             const SizedBox(height: 28),
-            if (_busy && _mcq == null)
+            if (_mcq == null && _error == null)
               const Padding(
-                padding: EdgeInsets.only(top: 80),
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                padding: EdgeInsets.only(top: 8),
+                child: McqSkeleton(),
               ),
             if (_error != null && _mcq == null) ...[
               InlineError(_error!),
@@ -186,13 +194,18 @@ class _McqScreenState extends State<McqScreen> {
                       borderRadius: BorderRadius.circular(AppRadii.md),
                       onTap: _busy || _result != null ? null : () => _answer(o),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               o,
-                              style: t.titleMedium?.copyWith(color: AppColors.accent),
+                              style: t.titleMedium?.copyWith(
+                                color: AppColors.accent,
+                              ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(child: Text(text, style: t.bodyLarge)),
@@ -232,14 +245,20 @@ class _McqScreenState extends State<McqScreen> {
                         const SizedBox(height: 8),
                         Text(
                           _result!['explanation'].toString(),
-                          style: t.bodyMedium?.copyWith(color: AppColors.inkSoft),
+                          style: t.bodyMedium?.copyWith(
+                            color: AppColors.inkSoft,
+                          ),
                         ),
                       ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                PrimaryButton(label: 'Next question', busy: _busy, onPressed: _load),
+                PrimaryButton(
+                  label: 'Next question',
+                  busy: _busy,
+                  onPressed: _load,
+                ),
               ],
             ],
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
+import '../../ui/skeleton.dart';
 import '../../ui/widgets.dart';
 
 class CurriculumScreen extends StatefulWidget {
@@ -53,7 +54,11 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
   Future<void> _load() async {
     try {
       final meRes = await widget.api.request('GET', '/api/v1/me', auth: true);
-      final progRes = await widget.api.request('GET', '/api/v1/programs', auth: true);
+      final progRes = await widget.api.request(
+        'GET',
+        '/api/v1/programs',
+        auth: true,
+      );
       final me = meRes['data'] as Map<String, dynamic>;
       final user = me['user'] as Map<String, dynamic>? ?? {};
       final profile = me['profile'] as Map<String, dynamic>?;
@@ -68,13 +73,21 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
           .toList();
 
       final full = (user['fullName'] ?? '').toString().trim();
-      final parts = full.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-      _first.text = (user['firstName'] ?? (parts.isNotEmpty ? parts.first : '')).toString();
-      _last.text = (user['lastName'] ?? (parts.length > 1 ? parts.sublist(1).join(' ') : '')).toString();
+      final parts = full
+          .split(RegExp(r'\s+'))
+          .where((p) => p.isNotEmpty)
+          .toList();
+      _first.text = (user['firstName'] ?? (parts.isNotEmpty ? parts.first : ''))
+          .toString();
+      _last.text =
+          (user['lastName'] ??
+                  (parts.length > 1 ? parts.sublist(1).join(' ') : ''))
+              .toString();
 
       setState(() {
         _programs = programs;
-        _programId = curriculum?['programId']?.toString() ??
+        _programId =
+            curriculum?['programId']?.toString() ??
             (programs.isNotEmpty ? programs.first['id']?.toString() : null);
         if (curriculum == null) {
           _year = DateTime.now().year + 1;
@@ -150,9 +163,9 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
           label,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: on ? Colors.white : AppColors.inkSoft,
-                fontWeight: FontWeight.w700,
-              ),
+            color: on ? Colors.white : AppColors.inkSoft,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -166,7 +179,33 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
       body: AppAtmosphere(
         child: SafeArea(
           child: _loading
-              ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+              ? ListView(
+                  padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: _back,
+                          icon: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                        const BrandMark(size: 32),
+                        const SizedBox(width: 10),
+                        Text(
+                          AppTheme.brandName,
+                          style: t.titleLarge?.copyWith(
+                            color: AppColors.accent,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    const CurriculumSkeleton(),
+                  ],
+                )
               : FadeRise(
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
@@ -175,7 +214,10 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                         children: [
                           IconButton(
                             onPressed: _back,
-                            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.accent),
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: AppColors.accent,
+                            ),
                           ),
                           const BrandMark(size: 32),
                           const SizedBox(width: 10),
@@ -198,14 +240,20 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                             shape: BoxShape.circle,
                             boxShadow: AppShadows.lift,
                           ),
-                          child: const Icon(Icons.person_outline_rounded, color: Colors.white, size: 36),
+                          child: const Icon(
+                            Icons.person_outline_rounded,
+                            color: Colors.white,
+                            size: 36,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
                       Text(
                         "Let's set the stage for your success.",
                         textAlign: TextAlign.center,
-                        style: t.headlineLarge?.copyWith(color: AppColors.accent),
+                        style: t.headlineLarge?.copyWith(
+                          color: AppColors.accent,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -227,19 +275,25 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                             TextField(
                               controller: _first,
                               textCapitalization: TextCapitalization.words,
-                              decoration: const InputDecoration(hintText: 'Arjun'),
+                              decoration: const InputDecoration(
+                                hintText: 'Arjun',
+                              ),
                             ),
                             const SizedBox(height: 16),
                             const FieldLabel('Last name'),
                             TextField(
                               controller: _last,
                               textCapitalization: TextCapitalization.words,
-                              decoration: const InputDecoration(hintText: 'Sharma'),
+                              decoration: const InputDecoration(
+                                hintText: 'Sharma',
+                              ),
                             ),
                             const SizedBox(height: 22),
                             Text(
                               'TARGET PROGRAM',
-                              style: t.labelMedium?.copyWith(color: AppColors.accent),
+                              style: t.labelMedium?.copyWith(
+                                color: AppColors.accent,
+                              ),
                             ),
                             const SizedBox(height: 10),
                             if (_programs.isEmpty)
@@ -260,14 +314,18 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                                     _chip(
                                       p['name']?.toString() ?? 'Program',
                                       _programId == p['id']?.toString(),
-                                      () => setState(() => _programId = p['id']?.toString()),
+                                      () => setState(
+                                        () => _programId = p['id']?.toString(),
+                                      ),
                                     ),
                                 ],
                               ),
                             const SizedBox(height: 22),
                             Text(
                               'TARGET YEAR',
-                              style: t.labelMedium?.copyWith(color: AppColors.accent),
+                              style: t.labelMedium?.copyWith(
+                                color: AppColors.accent,
+                              ),
                             ),
                             const SizedBox(height: 10),
                             GridView.count(
@@ -279,23 +337,42 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                               childAspectRatio: 2.2,
                               children: [
                                 for (final y in _years)
-                                  _chip('$y', _year == y, () => setState(() => _year = y)),
-                                _chip('Later', _year == null, () => setState(() => _year = null)),
+                                  _chip(
+                                    '$y',
+                                    _year == y,
+                                    () => setState(() => _year = y),
+                                  ),
+                                _chip(
+                                  'Later',
+                                  _year == null,
+                                  () => setState(() => _year = null),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 18),
                             Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: AppColors.accentSoft.withValues(alpha: 0.7),
+                                color: AppColors.accentSoft.withValues(
+                                  alpha: 0.7,
+                                ),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.accent.withValues(alpha: 0.1)),
+                                border: Border.all(
+                                  color: AppColors.accent.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                ),
                               ),
                               child: Text.rich(
                                 TextSpan(
-                                  style: t.bodySmall?.copyWith(color: AppColors.inkSoft, height: 1.45),
+                                  style: t.bodySmall?.copyWith(
+                                    color: AppColors.inkSoft,
+                                    height: 1.45,
+                                  ),
                                   children: const [
-                                    TextSpan(text: 'This helps us tailor your '),
+                                    TextSpan(
+                                      text: 'This helps us tailor your ',
+                                    ),
                                     TextSpan(
                                       text: 'Daily Study Plan',
                                       style: TextStyle(
@@ -303,7 +380,10 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    TextSpan(text: ' and current affairs to your timeline.'),
+                                    TextSpan(
+                                      text:
+                                          ' and current affairs to your timeline.',
+                                    ),
                                   ],
                                 ),
                               ),
@@ -336,7 +416,11 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [AppColors.deep, AppColors.deepMid, AppColors.accent],
+                            colors: [
+                              AppColors.deep,
+                              AppColors.deepMid,
+                              AppColors.accent,
+                            ],
                           ),
                         ),
                         child: const Row(
@@ -346,7 +430,10 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                             Spacer(),
                             Text(
                               'Rise. Rank. Earn.',
-                              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),

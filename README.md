@@ -92,11 +92,3 @@ Use pnpm. Update `CORS_ORIGINS` on the API and restart it.
 cd apps/mobile
 flutter build apk --dart-define=API_BASE_URL=https://api.yourdomain.com
 ```
-
-## Refresh this folder
-
-This tree is a clean snapshot of `Project/`. From the workspace:
-
-```powershell
-.\Delivery\sync-rising-rankers.ps1
-```

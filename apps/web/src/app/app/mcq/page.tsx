@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { McqSkeleton } from "@/components/skeleton";
 import { api, tokenKey } from "@/lib/api";
 import { emitRewards, type RewardsDelta } from "@/lib/rewards";
 
@@ -20,8 +21,8 @@ export default function McqPage() {
   return (
     <Suspense
       fallback={
-        <AppShell title="MCQ Practice">
-          <p className="text-sm text-[var(--muted)]">Loading…</p>
+        <AppShell overline="Practice" title="MCQ">
+          <McqSkeleton />
         </AppShell>
       }
     >
@@ -107,22 +108,20 @@ function McqInner() {
   }
 
   function optionClass(o: string) {
-    if (!result) return "option-btn";
-    if (o === result.correctOption) return "option-btn is-correct";
-    if (o === picked && !result.isCorrect) return "option-btn is-wrong";
+    if (result) {
+      if (o === result.correctOption) return "option-btn is-correct";
+      if (o === picked && !result.isCorrect) return "option-btn is-wrong";
+      return "option-btn";
+    }
+    if (picked === o) return "option-btn is-picked";
     return "option-btn";
   }
 
   return (
-    <AppShell title="MCQ Practice" subtitle="Pick an option. You’ll see the explanation after you answer.">
+    <AppShell overline="Practice" title="MCQ" subtitle="Pick an option. You’ll see the explanation after you answer.">
       {error ? (
-        <div className="card p-6">
+        <div className="lift-face p-6">
           <p className="msg-err">{error}</p>
-          {unlockPrice != null ? (
-            <button onClick={unlock} className="btn-primary mt-4">
-              Unlock more · ₹{unlockPrice}
-            </button>
-          ) : null}
           {errorCode === "FORBIDDEN" ? (
             <Link href="/app/search" className="btn-primary mt-4 inline-flex">
               Find this book in Search
@@ -136,9 +135,11 @@ function McqInner() {
         </div>
       ) : null}
 
+      {!mcq && !error ? <McqSkeleton /> : null}
+
       {mcq ? (
-        <div className="card p-6">
-          <p className="text-lg font-semibold leading-snug">{mcq.question}</p>
+        <div className="lift-face p-6 sm:p-8">
+          <p className="font-headline text-lg font-extrabold leading-snug tracking-tight sm:text-xl">{mcq.question}</p>
           <div className="mt-5 space-y-2">
             {(["A", "B", "C", "D"] as const).map((o) => (
               <button
@@ -147,24 +148,38 @@ function McqInner() {
                 onClick={() => answer(o)}
                 className={optionClass(o)}
               >
-                {o}. {mcq[`option${o}` as keyof Mcq]}
+                <span className="font-bold text-[var(--accent)]">{o}</span>
+                <span>{mcq[`option${o}` as keyof Mcq]}</span>
               </button>
             ))}
           </div>
           {result ? (
-            <div className="mt-5 border-t border-[var(--line)] pt-4">
-              <p className={result.isCorrect ? "msg-ok" : "text-[var(--danger)]"}>
+            <div
+              className={`mt-5 rounded-2xl p-4 ${
+                result.isCorrect ? "bg-[var(--success-soft)]" : "bg-[var(--danger-soft)]"
+              }`}
+            >
+              <p className={result.isCorrect ? "font-bold text-[var(--success)]" : "font-bold text-[var(--danger)]"}>
                 {result.isCorrect ? "Correct" : `Incorrect · Answer ${result.correctOption}`}
               </p>
               {result.explanation ? (
                 <p className="mt-2 text-sm text-[var(--ink-soft)]">{result.explanation}</p>
               ) : null}
-              <button onClick={load} className="btn-primary mt-4">
-                Next question
-              </button>
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {result ? (
+        <button onClick={load} className="btn-primary mt-4 w-full">
+          Next question
+        </button>
+      ) : null}
+
+      {unlockPrice != null ? (
+        <button onClick={unlock} className="btn-primary mt-4 w-full">
+          Unlock more · ₹{unlockPrice}
+        </button>
       ) : null}
     </AppShell>
   );

@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode } 
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AdminDialog, AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonTable } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 
 const MAX_QUESTIONS = 200;
@@ -936,8 +937,9 @@ export default function AdminTestsPage() {
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm text-[var(--ink-soft)]">
-                  {loadingQs ? "Loading…" : `${page.totalInFilter} matching`} · page{" "}
-                  {cursorStack.length}
+                  {loadingQs
+                    ? `page ${cursorStack.length}`
+                    : `${page.totalInFilter} matching · page ${cursorStack.length}`}
                 </p>
                 <button type="button" className="btn-secondary btn-sm" onClick={selectPage} disabled={page.items.length === 0}>
                   Select page
@@ -974,7 +976,11 @@ export default function AdminTestsPage() {
                 </button>
               </div>
               <div className="max-h-72 overflow-auto rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--bg-elevated)]">
-                {page.items.length === 0 && !loadingQs ? (
+                {loadingQs && page.items.length === 0 ? (
+                  <SkeletonRegion>
+                    <SkeletonTable cols={3} rows={6} compact />
+                  </SkeletonRegion>
+                ) : page.items.length === 0 ? (
                   <p className="p-4 text-sm text-[var(--muted)]">No questions in this filter.</p>
                 ) : (
                   <div className="row-list">
@@ -1172,7 +1178,9 @@ export default function AdminTestsPage() {
               </div>
             </>
           ) : submissionsLoading ? (
-            <p className="text-sm text-[var(--muted)]">Loading submissions…</p>
+            <SkeletonRegion>
+              <SkeletonTable cols={3} rows={6} compact />
+            </SkeletonRegion>
           ) : submissions.length === 0 ? (
             <p className="text-sm text-[var(--muted)]">No submitted attempts for this test yet.</p>
           ) : (

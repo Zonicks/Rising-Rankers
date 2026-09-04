@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
+import '../../ui/skeleton.dart';
 import '../../ui/widgets.dart';
 import '../legal/legal_copy.dart';
 import '../legal/legal_detail_screen.dart';
@@ -54,7 +55,11 @@ class _SupportScreenState extends State<SupportScreen> {
       _error = null;
     });
     try {
-      final res = await widget.api.request('GET', '/api/v1/support/tickets/me', auth: true);
+      final res = await widget.api.request(
+        'GET',
+        '/api/v1/support/tickets/me',
+        auth: true,
+      );
       if (!mounted) return;
       setState(() {
         _tickets = res['data'] as List<dynamic>? ?? [];
@@ -127,7 +132,10 @@ class _SupportScreenState extends State<SupportScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                      ),
                     ),
                     Text('Support', style: t.titleLarge),
                   ],
@@ -136,18 +144,22 @@ class _SupportScreenState extends State<SupportScreen> {
               Expanded(
                 child: FadeRise(
                   child: _loading
-                      ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SupportSkeleton()
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
                           children: [
                             const ScreenHeader(
                               overline: 'Help',
                               title: 'Support',
-                              subtitle: 'Report a payment, wallet, test, or account issue.',
+                              subtitle:
+                                  'Report a payment, wallet, test, or account issue.',
                             ),
                             const SizedBox(height: 8),
                             TextButton(
-                              onPressed: () => pushFade(context, LegalDetailScreen(doc: faq)),
+                              onPressed: () => pushFade(
+                                context,
+                                LegalDetailScreen(doc: faq),
+                              ),
                               child: const Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text('Read the FAQ'),
@@ -159,7 +171,12 @@ class _SupportScreenState extends State<SupportScreen> {
                             ],
                             if (_msg != null) ...[
                               const SizedBox(height: 12),
-                              Text(_msg!, style: t.bodyMedium?.copyWith(color: AppColors.success)),
+                              Text(
+                                _msg!,
+                                style: t.bodyMedium?.copyWith(
+                                  color: AppColors.success,
+                                ),
+                              ),
                             ],
                             const SizedBox(height: 20),
                             const FieldLabel('Category'),
@@ -170,14 +187,17 @@ class _SupportScreenState extends State<SupportScreen> {
                                 for (final c in supportCategories)
                                   DropdownMenuItem(value: c, child: Text(c)),
                               ],
-                              onChanged: (v) => setState(() => _category = v ?? 'Other'),
+                              onChanged: (v) =>
+                                  setState(() => _category = v ?? 'Other'),
                             ),
                             const SizedBox(height: 16),
                             const FieldLabel('Subject'),
                             TextField(
                               controller: _subject,
                               maxLength: 160,
-                              decoration: const InputDecoration(counterText: ''),
+                              decoration: const InputDecoration(
+                                counterText: '',
+                              ),
                             ),
                             const SizedBox(height: 16),
                             const FieldLabel('Message'),
@@ -186,21 +206,31 @@ class _SupportScreenState extends State<SupportScreen> {
                               maxLength: 2000,
                               minLines: 4,
                               maxLines: 8,
-                              decoration: const InputDecoration(counterText: ''),
+                              decoration: const InputDecoration(
+                                counterText: '',
+                              ),
                             ),
                             const SizedBox(height: 20),
-                            PrimaryButton(label: 'Send ticket', busy: _busy, onPressed: _submit),
+                            PrimaryButton(
+                              label: 'Send ticket',
+                              busy: _busy,
+                              onPressed: _submit,
+                            ),
                             const SizedBox(height: 32),
                             Text('YOUR TICKETS', style: t.labelMedium),
                             const SizedBox(height: 8),
                             if (_tickets.isEmpty)
                               const EmptyState(
                                 title: 'No tickets yet',
-                                body: 'Send a message above and it will show up here with status.',
+                                body:
+                                    'Send a message above and it will show up here with status.',
                               )
                             else
                               for (final raw in _tickets)
-                                _TicketTile(ticket: raw as Map<String, dynamic>, tone: _tone),
+                                _TicketTile(
+                                  ticket: raw as Map<String, dynamic>,
+                                  tone: _tone,
+                                ),
                           ],
                         ),
                 ),
@@ -233,7 +263,12 @@ class _TicketTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(ticket['subject']?.toString() ?? 'Ticket', style: t.titleMedium)),
+              Expanded(
+                child: Text(
+                  ticket['subject']?.toString() ?? 'Ticket',
+                  style: t.titleMedium,
+                ),
+              ),
               StatusChip(status.replaceAll('_', ' '), tone: tone(status)),
             ],
           ),
@@ -246,7 +281,10 @@ class _TicketTile extends StatelessWidget {
             style: t.bodySmall,
           ),
           const SizedBox(height: 8),
-          Text(ticket['message']?.toString() ?? '', style: t.bodyMedium?.copyWith(height: 1.45)),
+          Text(
+            ticket['message']?.toString() ?? '',
+            style: t.bodyMedium?.copyWith(height: 1.45),
+          ),
           const Divider(height: 28),
         ],
       ),

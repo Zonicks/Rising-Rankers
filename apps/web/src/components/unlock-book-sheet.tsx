@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Bone, UnlockSheetSkeleton } from "@/components/skeleton";
 import { api, tokenKey } from "@/lib/api";
 
 type BookDetail = {
@@ -89,20 +90,28 @@ export function UnlockBookSheet({
   const balance = wallet ? spendable(wallet) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div className="card w-full max-w-md p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+    <div className="sheet-scrim" role="dialog" aria-modal="true">
+      <div className="sheet-panel rounded-[2rem] sm:rounded-[2rem]">
+        <div className="sheet-handle sm:hidden" />
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-2 pt-5">
+        <p className="page-kicker">
           {alreadyFree ? "Add to study set" : "Confirm add-on"}
         </p>
         {book ? (
           <>
-            <h2 className="mt-2 text-xl font-bold">{book.title}</h2>
+            <h2 className="mt-2 font-headline text-xl font-extrabold tracking-tight">{book.title}</h2>
             <p className="mt-1 text-sm text-[var(--ink-soft)]">{book.authorName}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="chip">
                 {book.inProgram ? "In your syllabus" : `${book.program} add-on`}
               </span>
-              <span className={`text-sm font-bold ${alreadyFree ? "text-[var(--success)]" : ""}`}>
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${
+                  alreadyFree
+                    ? "bg-[#FBF6DC] text-[var(--deep)]"
+                    : "bg-[var(--gold)] text-[var(--deep)]"
+                }`}
+              >
                 {alreadyFree ? "FREE" : `₹${price}`}
               </span>
             </div>
@@ -112,11 +121,13 @@ export function UnlockBookSheet({
                 {price > 0 ? " · deposited first, then promo." : ""}
               </p>
             ) : (
-              <p className="mt-4 text-sm text-[var(--muted)]">Loading wallet…</p>
+              <div className="mt-4" aria-hidden>
+                <Bone className="h-4 w-48" />
+              </div>
             )}
           </>
-        ) : (
-          <p className="mt-3 text-sm text-[var(--muted)]">Loading…</p>
+        ) : error ? null : (
+          <UnlockSheetSkeleton />
         )}
 
         {error ? <p className="msg-err mt-4">{error}</p> : null}
@@ -135,8 +146,9 @@ export function UnlockBookSheet({
             Add money in Wallet
           </Link>
         ) : null}
+        </div>
 
-        <div className="mt-6 flex gap-3">
+        <div className="flex gap-3 px-6 py-5">
           <button type="button" className="btn-secondary flex-1" onClick={onClose}>
             Cancel
           </button>

@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AdminDialog, AdminShell, PageSection } from "@/components/admin-shell";
+import { SkeletonRegion, SkeletonUserDetail } from "@/components/skeleton";
 import { adminTokenKey, api } from "@/lib/api";
 import { ist, statusChip, statusLabel } from "../user-display";
 
@@ -645,8 +646,10 @@ export default function AdminUserDetailPage() {
 
   if (!user && !error) {
     return (
-      <AdminShell title="User" subtitle="Loading account…">
-        <p className="text-sm text-[var(--muted)]">Loading…</p>
+      <AdminShell title="User" subtitle="Student account">
+        <SkeletonRegion>
+          <SkeletonUserDetail />
+        </SkeletonRegion>
       </AdminShell>
     );
   }

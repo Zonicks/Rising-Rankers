@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AuthStoryPanel } from "@/components/auth-story";
 import { BrandMark } from "@/components/brand";
 import { api, tokenKey } from "@/lib/api";
 
@@ -104,156 +105,168 @@ function CurriculumPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-[var(--deep)]">
         <BrandMark size={48} />
       </main>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-6 pb-16 pt-2">
-      <header className="sticky top-0 z-10 -mx-6 flex items-center gap-3 bg-[var(--bg)]/80 px-6 py-4 backdrop-blur-md">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--accent)] hover:bg-[var(--accent-soft)]"
-          aria-label={rebuild ? "Back" : "Back to sign in"}
-        >
-          ←
-        </button>
-        <Link href="/" className="flex items-center gap-2.5">
-          <BrandMark size={32} />
-          <span className="font-headline text-lg font-extrabold tracking-tight text-[var(--accent)]">Rising Rankers</span>
-        </Link>
-      </header>
+    <main className="grid min-h-screen lg:grid-cols-2">
+      <AuthStoryPanel
+        rotating={false}
+        sceneIndex={0}
+        overline="Your path"
+        title="Let's set the stage for your success."
+        body="Help us personalize your learning path by sharing a few details. This takes less than a minute."
+      />
 
-      <section className="animate-fade-rise mt-8 text-center">
-        <div
-          className="mx-auto mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full text-white shadow-[var(--shadow-lift)]"
-          style={{ background: "var(--accent)" }}
-        >
-          <svg viewBox="0 0 24 24" className="h-9 w-9" fill="currentColor">
-            <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.67-8 5v1h16v-1c0-3.33-4.7-5-8-5Z" />
-          </svg>
+      <section className="flex flex-col bg-[var(--bg)]">
+        <div className="bg-[var(--deep)] px-6 pb-10 pt-4 text-white lg:hidden">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--gold)] hover:bg-white/10"
+              aria-label={rebuild ? "Back" : "Back to sign in"}
+            >
+              ←
+            </button>
+            <Link href="/" className="flex items-center gap-2.5">
+              <BrandMark size={32} />
+              <span className="font-headline text-lg font-extrabold tracking-tight">Rising Rankers</span>
+            </Link>
+          </div>
+          <p className="page-kicker mt-8">Your path</p>
+          <h1 className="mt-2 font-headline text-3xl font-extrabold tracking-tight">
+            Let&apos;s set the stage for your success.
+          </h1>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-white/70">
+            Help us personalize your learning path by sharing a few details. This takes less than a minute.
+          </p>
         </div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-[var(--accent)] md:text-4xl">
-          Let&apos;s set the stage for your success.
-        </h1>
-        <p className="mx-auto mt-4 max-w-md text-[var(--ink-soft)]">
-          Help us personalize your learning path by sharing a few details. This takes less than a minute.
-        </p>
-      </section>
 
-      <form onSubmit={onSubmit} className="mt-10">
-        <div className="relative overflow-hidden rounded-[2rem] bg-[#F1F3FB] p-8 md:p-12">
-          <div className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full bg-[var(--accent)]/5 blur-3xl" />
-          <div className="relative space-y-8">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label className="label uppercase tracking-[0.15em] text-[var(--accent)]" htmlFor="firstName">
-                  First name
-                </label>
-                <input
-                  id="firstName"
-                  className="field h-14 rounded-2xl"
-                  placeholder="Arjun"
-                  required
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="label uppercase tracking-[0.15em] text-[var(--accent)]" htmlFor="lastName">
-                  Last name
-                </label>
-                <input
-                  id="lastName"
-                  className="field h-14 rounded-2xl"
-                  placeholder="Sharma"
-                  required
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
+        <div className="flex flex-1 items-start justify-center px-6 py-10 sm:items-center lg:py-16">
+          <div className="animate-fade-rise w-full max-w-md">
+            <div className="mb-8 hidden items-center gap-3 lg:flex">
+              <button
+                type="button"
+                onClick={onBack}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--accent)] hover:bg-[var(--accent-soft)]"
+                aria-label={rebuild ? "Back" : "Back to sign in"}
+              >
+                ←
+              </button>
+              <Link href="/" className="flex items-center gap-2.5">
+                <BrandMark size={32} />
+                <span className="font-headline text-lg font-extrabold tracking-tight text-[var(--accent)]">
+                  Rising Rankers
+                </span>
+              </Link>
             </div>
 
-            <div>
-              <p className="label uppercase tracking-[0.15em] text-[var(--accent)]">Target program</p>
-              {programs.length === 0 ? (
-                <p className="text-sm text-[var(--muted)]">No programs yet. Ask an admin to add one in Syllabus.</p>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {programs.map((p) => (
+            <p className="page-kicker hidden lg:block">Your path</p>
+            <h2 className="mt-2 hidden font-headline text-3xl font-extrabold tracking-tight lg:block">
+              Build your curriculum
+            </h2>
+            <p className="mt-2 hidden text-sm text-[var(--ink-soft)] lg:block">
+              Name, program, and target year. We use this to pick your daily plan.
+            </p>
+
+            <form onSubmit={onSubmit} className="card mt-6 space-y-6 p-6 shadow-[var(--shadow-lift)]">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label className="label" htmlFor="firstName">
+                    First name
+                  </label>
+                  <input
+                    id="firstName"
+                    className="field"
+                    placeholder="Arjun"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor="lastName">
+                    Last name
+                  </label>
+                  <input
+                    id="lastName"
+                    className="field"
+                    placeholder="Sharma"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="page-kicker mb-3">Target program</p>
+                {programs.length === 0 ? (
+                  <p className="text-sm text-[var(--muted)]">No programs yet. Ask an admin to add one in Syllabus.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {programs.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className={`choice-chip ${programId === p.id ? "is-on" : ""}`}
+                        onClick={() => setProgramId(p.id)}
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="page-kicker mb-3">Target year</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {years.map((y) => (
                     <button
-                      key={p.id}
+                      key={y}
                       type="button"
-                      className={`choice-chip ${programId === p.id ? "is-on" : ""}`}
-                      onClick={() => setProgramId(p.id)}
+                      className={`choice-chip ${targetYear === y ? "is-on" : ""}`}
+                      onClick={() => setTargetYear(y)}
                     >
-                      {p.name}
+                      {y}
                     </button>
                   ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <p className="label uppercase tracking-[0.15em] text-[var(--accent)]">Target year</p>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {years.map((y) => (
                   <button
-                    key={y}
                     type="button"
-                    className={`choice-chip ${targetYear === y ? "is-on" : ""}`}
-                    onClick={() => setTargetYear(y)}
+                    className={`choice-chip ${targetYear === null ? "is-on" : ""}`}
+                    onClick={() => setTargetYear(null)}
                   >
-                    {y}
+                    Later
                   </button>
-                ))}
-                <button
-                  type="button"
-                  className={`choice-chip ${targetYear === null ? "is-on" : ""}`}
-                  onClick={() => setTargetYear(null)}
-                >
-                  Later
-                </button>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-start gap-4 rounded-2xl border border-[var(--accent)]/10 bg-[var(--accent-soft)]/70 p-5">
-              <span className="mt-0.5 text-[var(--accent)]" aria-hidden>
-                ✦
-              </span>
-              <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
+              <p className="rounded-2xl bg-[var(--accent-soft)] p-4 text-sm leading-relaxed text-[var(--ink-soft)]">
                 This helps us tailor your <strong className="text-[var(--accent)]">Daily Study Plan</strong> and
                 curated current affairs to your timeline.
               </p>
-            </div>
+
+              {error ? <p className="msg-err">{error}</p> : null}
+
+              <button className="btn-primary w-full" disabled={busy || !programId}>
+                {busy ? "Building…" : "Build My Curriculum"}
+              </button>
+            </form>
+
+            <p className="mt-5 text-center text-xs leading-relaxed text-[var(--muted)]">
+              By continuing, you agree to our{" "}
+              <Link href="/legal" className="font-semibold text-[var(--accent)]">
+                Terms of Service
+              </Link>
+            </p>
           </div>
         </div>
-
-        {error ? <p className="msg-err mt-6">{error}</p> : null}
-
-        <button
-          className="btn-primary mt-8 h-auto w-full rounded-3xl py-5 text-lg font-extrabold"
-          disabled={busy || !programId}
-        >
-          {busy ? "Building…" : "Build My Curriculum"}
-        </button>
-        <p className="mt-4 text-center text-xs tracking-wide text-[var(--muted)]">
-          By continuing, you agree to our{" "}
-          <Link href="/legal" className="font-semibold text-[var(--accent)]">
-            Terms of Service
-          </Link>
-        </p>
-      </form>
-
-      <div className="mt-16 h-40 overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--deep)] via-[#0c1b3d] to-[var(--accent)] opacity-80">
-        <div className="flex h-full items-end justify-between p-6">
-          <BrandMark size={56} />
-          <p className="text-sm font-semibold text-white/70">Rise. Rank. Earn.</p>
-        </div>
-      </div>
+      </section>
     </main>
   );
 }
@@ -262,7 +275,7 @@ export default function CurriculumRoute() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center">
+        <main className="flex min-h-screen items-center justify-center bg-[var(--deep)]">
           <BrandMark size={48} />
         </main>
       }
