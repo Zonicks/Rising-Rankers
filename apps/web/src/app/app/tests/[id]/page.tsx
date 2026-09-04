@@ -316,7 +316,7 @@ export default function TestRoomPage() {
                     result.rank == null ? "text-lg sm:text-2xl" : "text-2xl tabular-nums sm:text-3xl"
                   }`}
                 >
-                  {result.rank ?? "Pending"}
+                  {result.rank == null ? "Pending" : String(result.rank)}
                 </p>
               </div>
             </div>
