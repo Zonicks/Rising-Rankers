@@ -244,8 +244,54 @@ body {
   background: transparent;
 }
 
+/* Sidebar nav — thin, soft scrollbar on the deep navy rail */
+.admin-sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  scrollbar-gutter: stable;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-track {
+  margin: 6px 0;
+  background: transparent;
+  border-radius: 999px;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(240, 194, 26, 0.12);
+  transition: background-color 160ms ease;
+}
+
+.admin-sidebar-nav:hover::-webkit-scrollbar-thumb,
+.admin-sidebar-nav:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(240, 194, 26, 0.22);
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-thumb:active {
+  background-color: rgba(240, 194, 26, 0.45);
+  box-shadow: none;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse {
     animation: none;
+  }
+
+  .admin-sidebar-nav::-webkit-scrollbar-thumb {
+    transition: none;
   }
 }

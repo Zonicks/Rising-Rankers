@@ -243,13 +243,13 @@ function FlashcardsInner() {
     }
 
     const width = Math.max(420, e.currentTarget.offsetWidth);
-    if (dir > 0) {
-      flyOff(width * 1.15, goNext);
+    if (dir < 0) {
+      flyOff(-width * 1.15, goNext);
     } else if (historyRef.current.length === 0) {
       setDx(0);
       nudgePrevious();
     } else {
-      flyOff(-width * 1.15, previous);
+      flyOff(width * 1.15, previous);
     }
   }
 
@@ -453,8 +453,9 @@ function FlashcardsInner() {
 
 function PageDots({ canPrevious, drag }: { canPrevious: boolean; drag: number }) {
   const t = Math.max(-1, Math.min(1, drag / 88));
-  const left = canPrevious ? (t < 0 ? 0.45 + 0.4 * -t : 0.28) : 0.22;
-  const right = t > 0 ? 0.45 + 0.4 * t : 0.28;
+  // Left drag = next, right drag = previous
+  const left = t < 0 ? 0.45 + 0.4 * -t : 0.28;
+  const right = canPrevious ? (t > 0 ? 0.45 + 0.4 * t : 0.28) : 0.22;
   return (
     <span className="pointer-events-none absolute bottom-5 left-0 right-0 inline-flex items-center justify-center gap-[7px]" aria-hidden>
       <span

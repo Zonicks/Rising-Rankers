@@ -571,14 +571,14 @@ class _SwipeDeckState extends State<_SwipeDeck> with TickerProviderStateMixin {
     }
 
     final width = MediaQuery.sizeOf(context).width;
-    if (dir > 0) {
-      _commit(width * 1.15, widget.onNext);
+    if (dir < 0) {
+      _commit(-width * 1.15, widget.onNext);
     } else if (!widget.canPrevious) {
       _shake.forward(from: 0);
       HapticFeedback.selectionClick();
       _animateTo(0);
     } else {
-      _commit(-width * 1.15, widget.onPrevious);
+      _commit(width * 1.15, widget.onPrevious);
     }
   }
 
@@ -753,11 +753,9 @@ class _PageDots extends StatelessWidget {
       children: [
         _dot(
           size: t < -0.25 ? 8 : 6,
-          color: canPrevious
-              ? AppColors.deepMid.withValues(
-                  alpha: t < 0 ? 0.45 + 0.4 * -t : 0.28,
-                )
-              : AppColors.line.withValues(alpha: 0.7),
+          color: AppColors.deepMid.withValues(
+            alpha: t < 0 ? 0.45 + 0.4 * -t : 0.28,
+          ),
         ),
         const SizedBox(width: 7),
         _dot(
@@ -768,9 +766,11 @@ class _PageDots extends StatelessWidget {
         const SizedBox(width: 7),
         _dot(
           size: t > 0.25 ? 8 : 6,
-          color: AppColors.deepMid.withValues(
-            alpha: t > 0 ? 0.45 + 0.4 * t : 0.28,
-          ),
+          color: canPrevious
+              ? AppColors.deepMid.withValues(
+                  alpha: t > 0 ? 0.45 + 0.4 * t : 0.28,
+                )
+              : AppColors.line.withValues(alpha: 0.7),
         ),
       ],
     );

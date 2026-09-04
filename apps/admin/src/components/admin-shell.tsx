@@ -93,7 +93,7 @@ export function AdminShell({
             </p>
           </div>
         </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-4 md:flex-1 md:flex-col md:overflow-y-auto md:pb-6">
+        <nav className="admin-sidebar-nav flex gap-1 overflow-x-auto px-3 pb-4 md:flex-1 md:flex-col md:overflow-y-auto md:overflow-x-hidden md:pb-6">
           {groups.map((group) => (
             <div key={group.label} className="mb-1 md:mb-4">
               <p className="mb-1 hidden px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 md:block">
