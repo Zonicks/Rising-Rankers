@@ -1,7 +1,7 @@
 class AppConfig {
   /// Hosted API (EC2). Override for local:
   /// flutter run --dart-define=API_BASE_URL=http://192.168.1.3:4000
-  static const hostedApiBaseUrl = 'http://15.252.43.40';
+  static const hostedApiBaseUrl = 'https://api-rising-rankers.zonicks.com';
 
   static String get apiBaseUrl {
     const fromEnv = String.fromEnvironment('API_BASE_URL');

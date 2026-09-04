@@ -28,7 +28,9 @@ EC2 only serves the API. Web and admin do **not** update when you rebuild Docker
 | Code on the box | `/opt/Rising-Rankers` |
 | Secrets file | `/etc/learning.env` |
 | Health (direct) | http://15.252.43.40:4000/health |
-| Health (nginx) | http://15.252.43.40/health |
+| Health (nginx HTTP) | http://15.252.43.40/health |
+| Public API (HTTPS) | https://api-rising-rankers.zonicks.com |
+| Health (HTTPS) | https://api-rising-rankers.zonicks.com/health |
 
 `/etc/learning.env` keys (values stay on the server, never commit them):
 
@@ -57,6 +59,51 @@ git push origin main
 ```
 
 Confirm the commit is on `main`: [https://github.com/Zonicks/Rising-Rankers/commits/main](https://github.com/Zonicks/Rising-Rankers/commits/main)
+
+---
+
+## 0b. API HTTPS (`api-rising-rankers.zonicks.com`)
+
+Browsers block HTTPS Vercel apps from calling an HTTP API (mixed content). The API must be served on HTTPS.
+
+### DNS (required before Certbot)
+
+At your DNS host for `zonicks.com`, set:
+
+| Type | Name / host | Value | TTL |
+|------|-------------|-------|-----|
+| **A** | `api-rising-rankers` | `15.252.43.40` | 300 (or Auto) |
+
+Remove any **CNAME** (or Vercel DNS) for that same host. Today the name still resolves to Vercel IPs (`216.198.79.x` / `64.29.17.x`), which will break certificate issuance.
+
+Check from your PC:
+
+```powershell
+Resolve-DnsName api-rising-rankers.zonicks.com -Type A
+```
+
+You want a single A answer: `15.252.43.40`.
+
+### On the EC2 box (after DNS is correct)
+
+Port **443** must be open (already added on `rising-rankers-api-staging-sg`). Nginx `server_name` is already `api-rising-rankers.zonicks.com`. Then:
+
+```bash
+certbot --nginx -d api-rising-rankers.zonicks.com --non-interactive --agree-tos -m info.zonicks@gmail.com --redirect
+curl -fsS https://api-rising-rankers.zonicks.com/health
+```
+
+Certbot renews automatically via `certbot.timer`.
+
+### Point frontends at HTTPS
+
+| App | Setting |
+|-----|---------|
+| Vercel student web | `NEXT_PUBLIC_API_URL=https://api-rising-rankers.zonicks.com` |
+| Vercel admin | `NEXT_PUBLIC_API_URL=https://api-rising-rankers.zonicks.com` |
+| Flutter | `--dart-define=API_BASE_URL=https://api-rising-rankers.zonicks.com` (or default in `config.dart`) |
+
+No trailing slash.
 
 ---
 
@@ -231,10 +278,10 @@ Create **two** Vercel projects from the same GitHub repo `Zonicks/Rising-Rankers
 
 | Vercel project | Root directory | Environment variable |
 |----------------|----------------|----------------------|
-| Student web | `apps/web` | `NEXT_PUBLIC_API_URL=http://15.252.43.40:4000` |
-| Admin CMS | `apps/admin` | `NEXT_PUBLIC_API_URL=http://15.252.43.40:4000` |
+| Student web | `apps/web` | `NEXT_PUBLIC_API_URL=https://api-rising-rankers.zonicks.com` |
+| Admin CMS | `apps/admin` | `NEXT_PUBLIC_API_URL=https://api-rising-rankers.zonicks.com` |
 
-When you have HTTPS on the API, switch both to `https://api.yourdomain.com` (no trailing slash).
+When you have HTTPS on the API, use `https://api-rising-rankers.zonicks.com` (no trailing slash).
 
 Settings that matter for this pnpm monorepo:
 
@@ -266,7 +313,7 @@ API URL must match the live API (no trailing slash).
 ```powershell
 $env:Path = "C:\Users\Celestial\Documents\Flutter SDK\flutter\bin;" + $env:Path
 cd "d:\Projects\Learning App\Project\apps\mobile"
-flutter build apk --dart-define=API_BASE_URL=http://15.252.43.40:4000
+flutter build apk --dart-define=API_BASE_URL=https://api-rising-rankers.zonicks.com
 ```
 
 APK output:
@@ -278,7 +325,7 @@ apps\mobile\build\app\outputs\flutter-apk\app-release.apk
 iOS (when certificates exist):
 
 ```powershell
-flutter build ipa --dart-define=API_BASE_URL=http://15.252.43.40:4000
+flutter build ipa --dart-define=API_BASE_URL=https://api-rising-rankers.zonicks.com
 ```
 
 Local device against this PC instead of EC2:

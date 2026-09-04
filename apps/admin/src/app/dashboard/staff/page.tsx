@@ -157,7 +157,7 @@ export default function AdminStaffPage() {
       {createOpen ? (
         <AdminDialog title="New staff account" onClose={() => !busy && setCreateOpen(false)}>
           <form onSubmit={submitCreate} className="space-y-3">
-            <p className="text-sm text-[var(--ink-soft)]">Each person gets their own email. Do not share Admin123!.</p>
+            <p className="text-sm text-[var(--ink-soft)]">Each person gets their own email and password. Do not share credentials.</p>
             <div>
               <label className="admin-label">Full name</label>
               <input className="admin-input" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />

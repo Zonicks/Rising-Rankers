@@ -7,8 +7,8 @@ import { api, adminTokenKey } from "@/lib/api";
 
 export default function AdminSignInPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@learning.local");
-  const [password, setPassword] = useState("Admin123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"password" | "mfa" | "enroll">("password");
   const [challenge, setChallenge] = useState<string | null>(null);
@@ -114,7 +114,7 @@ export default function AdminSignInPage() {
           <h2 className="mt-2 text-3xl font-semibold tracking-tight">Welcome back</h2>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
             {step === "password"
-              ? "Seed: admin@learning.local / Admin123!"
+              ? "Sign in with your admin email and password."
               : step === "mfa"
                 ? "Enter the 6-digit authenticator code."
                 : "MFA is required. Add this secret, then enter a code."}

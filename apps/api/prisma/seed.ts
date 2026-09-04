@@ -31,6 +31,29 @@ async function seed() {
     },
   });
 
+  const zonicksAdminEmail = "admin@zonicks.com";
+  await prisma.user.upsert({
+    where: { email: zonicksAdminEmail },
+    update: {
+      role: "SUPER_ADMIN",
+      passwordHash: adminHash,
+      status: "ACTIVE",
+      firstName: "Zonicks",
+      lastName: "Admin",
+      fullName: "Zonicks Admin",
+    },
+    create: {
+      email: zonicksAdminEmail,
+      passwordHash: adminHash,
+      fullName: "Zonicks Admin",
+      firstName: "Zonicks",
+      lastName: "Admin",
+      role: "SUPER_ADMIN",
+      profile: { create: { profileComplete: true, consentAccepted: true, consentAt: new Date() } },
+      wallet: { create: {} },
+    },
+  });
+
   const studentEmail = "student@learning.local";
   const studentPassword = "Student123!";
   const studentHash = await bcrypt.hash(studentPassword, 10);
