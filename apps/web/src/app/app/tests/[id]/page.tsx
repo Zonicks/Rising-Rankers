@@ -288,14 +288,16 @@ export default function TestRoomPage() {
           </section>
           <div className="space-y-4 sm:space-y-5">
             <div className="grid grid-cols-2 gap-3">
-              {[
-                ["Correct", result.correctCount, "text-[#027a48] bg-[#ecfdf3]"],
-                ["Incorrect", result.incorrectCount, "text-[#b42318] bg-[#fef3f2]"],
-              ].map(([label, value, tone]) => (
-                <div key={String(label)} className={`min-w-0 overflow-hidden rounded-3xl p-4 sm:p-5 ${tone}`}>
-                  <p className="text-[10px] font-extrabold uppercase tracking-widest sm:text-[11px]">{label}</p>
+              {(
+                [
+                  { label: "Correct", value: result.correctCount, tone: "text-[#027a48] bg-[#ecfdf3]" },
+                  { label: "Incorrect", value: result.incorrectCount, tone: "text-[#b42318] bg-[#fef3f2]" },
+                ] as const
+              ).map((tile) => (
+                <div key={tile.label} className={`min-w-0 overflow-hidden rounded-3xl p-4 sm:p-5 ${tile.tone}`}>
+                  <p className="text-[10px] font-extrabold uppercase tracking-widest sm:text-[11px]">{tile.label}</p>
                   <p className="mt-1 text-2xl font-extrabold tabular-nums leading-tight sm:text-3xl">
-                    {String(value ?? "—")}
+                    {String(tile.value ?? "—")}
                   </p>
                 </div>
               ))}

@@ -204,7 +204,13 @@ function pathFromRow(row: SpreadsheetRow, n: number, chapterId?: string): PathDr
   };
 }
 
-export function hasCatalogPath(item: PathDraft): boolean {
+export function hasCatalogPath(item: {
+  program?: string;
+  subject?: string;
+  book?: string;
+  chapter?: string;
+  category?: string;
+}): boolean {
   return Boolean(item.program || item.subject || item.book || item.chapter || item.category);
 }
 

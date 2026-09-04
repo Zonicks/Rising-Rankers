@@ -243,7 +243,7 @@ export default function ContentPage() {
       importKind !== "book" &&
       !serverFile &&
       !selectedId &&
-      items.some((item) => !hasCatalogPath(item as { program?: string; subject?: string; book?: string; chapter?: string; category?: string }))
+      items.some((item) => !hasCatalogPath(item))
     ) {
       setError("Select a default chapter, or include program/subject/book/chapter in the file");
       return;
