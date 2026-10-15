@@ -3,6 +3,7 @@ import {
   bookBulkSchema,
   chapterCreateSchema,
   chapterUpdateSchema,
+  contentImportRunCreateSchema,
   flashCardBulkSchema,
   flashCardCreateSchema,
   flashReviewSchema,
@@ -115,6 +116,27 @@ export async function contentRoutes(app: FastifyInstance) {
     "/api/v1/admin/books/import",
     { preHandler: [authJwt, requireRole(...contentRoles), validateBody(bookBulkSchema)] },
     (req, reply) => contentController.adminCreateBooks(req as never, reply)
+  );
+  app.get(
+    "/api/v1/admin/imports",
+    { preHandler: [authJwt, requireRole(...readRoles)] },
+    (req, reply) => contentController.adminListImports(req as never, reply)
+  );
+  app.post(
+    "/api/v1/admin/imports/runs",
+    {
+      preHandler: [
+        authJwt,
+        requireRole(...contentRoles),
+        validateBody(contentImportRunCreateSchema),
+      ],
+    },
+    (req, reply) => contentController.adminRecordImport(req as never, reply)
+  );
+  app.get(
+    "/api/v1/admin/imports/:id",
+    { preHandler: [authJwt, requireRole(...readRoles)] },
+    (req, reply) => contentController.adminGetImport(req as never, reply)
   );
   app.post(
     "/api/v1/admin/imports",

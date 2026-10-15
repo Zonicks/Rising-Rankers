@@ -42,6 +42,19 @@ type WriteOpts = {
   collectErrors?: boolean;
 };
 
+type ImportRunKind = "MCQ" | "FLASH" | "BOOK";
+
+const IMPORT_ERROR_CAP = 200;
+const IMPORT_ITEM_CAP = 500;
+
+function capImportErrors(errors: RowError[]) {
+  return errors.slice(0, IMPORT_ERROR_CAP);
+}
+
+function capImportItems<T>(items: T[]) {
+  return items.slice(0, IMPORT_ITEM_CAP);
+}
+
 type PathItem = PathDraft & {
   row?: number;
   subject?: string;
@@ -310,7 +323,18 @@ export class ContentService {
     if (!opts.collectErrors && items.length === 1 && data.count === 0 && skipped === 0 && errors[0]) {
       throw new AppError("VALIDATION_ERROR", errors[0].message, 400);
     }
-    return { created: data.count, skipped, errors };
+    return {
+      created: data.count,
+      skipped,
+      errors,
+      previewItems: unique.map((i) => ({
+        front: i.front,
+        back: i.back,
+        subject: i.subject ?? null,
+        topic: i.topic ?? null,
+        difficulty: i.difficulty ?? null,
+      })),
+    };
   }
 
   async listFlashCards(opts?: { chapterId?: string; take?: number }) {
@@ -422,7 +446,22 @@ export class ContentService {
     if (!opts.collectErrors && items.length === 1 && data.count === 0 && skipped === 0 && errors[0]) {
       throw new AppError("VALIDATION_ERROR", errors[0].message, 400);
     }
-    return { created: data.count, skipped, errors };
+    return {
+      created: data.count,
+      skipped,
+      errors,
+      previewItems: unique.map((i) => ({
+        question: i.question,
+        optionA: i.optionA,
+        optionB: i.optionB,
+        optionC: i.optionC,
+        optionD: i.optionD,
+        correctOption: i.correctOption,
+        subject: i.subject ?? null,
+        topic: i.topic ?? null,
+        difficulty: i.difficulty ?? null,
+      })),
+    };
   }
 
   async createBooks(
@@ -445,11 +484,21 @@ export class ContentService {
     let skipped = 0;
     let categoriesCreated = 0;
     let subcategoriesCreated = 0;
+    const previewItems: Array<Record<string, unknown>> = [];
     for (const item of items) {
       try {
         const book = await resolver.importBook(item);
-        if (book.created) created += 1;
-        else skipped += 1;
+        if (book.created) {
+          created += 1;
+          previewItems.push({
+            title: item.book,
+            author: item.author ?? null,
+            program: item.program,
+            subject: item.subject,
+            chapter: item.chapter ?? null,
+            hasQuestion: Boolean(item.question),
+          });
+        } else skipped += 1;
         categoriesCreated += book.categoriesCreated;
         subcategoriesCreated += book.subcategoriesCreated;
         if (item.question && item.optionA && item.optionB && item.optionC && item.optionD && item.correctOption) {
@@ -484,6 +533,12 @@ export class ContentService {
         questionsCreated += result.created;
         questionsSkipped += result.skipped;
         errors.push(...result.errors);
+        for (const q of result.previewItems) {
+          previewItems.push({
+            ...q,
+            kind: "question",
+          });
+        }
       }
     }
     return {
@@ -494,7 +549,66 @@ export class ContentService {
       questionsCreated,
       questionsSkipped,
       errors,
+      previewItems,
     };
+  }
+
+  async recordImportRun(input: {
+    kind: ImportRunKind;
+    fileName: string;
+    actorUserId?: string | null;
+    createdCount: number;
+    skippedCount: number;
+    errorCount: number;
+    rowCount: number;
+    errors: RowError[];
+    items: Array<Record<string, unknown>>;
+  }) {
+    const run = await prisma.contentImportRun.create({
+      data: {
+        kind: input.kind,
+        fileName: input.fileName.slice(0, 260),
+        actorUserId: input.actorUserId || null,
+        createdCount: input.createdCount,
+        skippedCount: input.skippedCount,
+        errorCount: input.errorCount,
+        rowCount: input.rowCount,
+        errors: capImportErrors(input.errors) as Prisma.InputJsonValue,
+        items: capImportItems(input.items) as Prisma.InputJsonValue,
+      },
+      select: { id: true },
+    });
+    return run.id;
+  }
+
+  async listImportRuns(take = 50) {
+    const limit = clampTake(take, 50, 100);
+    return prisma.contentImportRun.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        kind: true,
+        fileName: true,
+        createdCount: true,
+        skippedCount: true,
+        errorCount: true,
+        rowCount: true,
+        createdAt: true,
+        actor: { select: { id: true, email: true, fullName: true } },
+      },
+    });
+  }
+
+  async getImportRun(id: string) {
+    const run = await prisma.contentImportRun.findUnique({
+      where: { id },
+      include: {
+        actor: { select: { id: true, email: true, fullName: true } },
+      },
+    });
+    if (!run) throw new AppError("NOT_FOUND", "Import run not found", 404);
+    return run;
   }
 
   async importSpreadsheet(input: {
@@ -503,6 +617,7 @@ export class ContentService {
     kind: "mcq" | "flash" | "book";
     defaultChapterId?: string;
     createMissingPath?: boolean;
+    actorUserId?: string | null;
   }) {
     let rows: Awaited<ReturnType<typeof parseSpreadsheetBuffer>>;
     try {
@@ -526,6 +641,7 @@ export class ContentService {
     }
 
     const errors: RowError[] = [];
+    const previewItems: Array<Record<string, unknown>> = [];
     let created = 0;
     let skipped = 0;
     const opts: WriteOpts = {
@@ -542,6 +658,7 @@ export class ContentService {
         created += result.created;
         skipped += result.skipped;
         errors.push(...result.errors);
+        previewItems.push(...result.previewItems);
       }
     } else if (input.kind === "flash") {
       const mapped = mapFlashImportRows(rows, input.defaultChapterId);
@@ -551,6 +668,7 @@ export class ContentService {
         created += result.created;
         skipped += result.skipped;
         errors.push(...result.errors);
+        previewItems.push(...result.previewItems);
       }
     } else {
       const mapped = mapBookImportRows(rows);
@@ -568,7 +686,19 @@ export class ContentService {
         categoriesCreated += result.categoriesCreated;
         subcategoriesCreated += result.subcategoriesCreated;
         errors.push(...result.errors);
+        previewItems.push(...result.previewItems);
       }
+      const importRunId = await this.recordImportRun({
+        kind: "BOOK",
+        fileName: input.filename,
+        actorUserId: input.actorUserId,
+        createdCount: created,
+        skippedCount: skipped,
+        errorCount: errors.length,
+        rowCount: rows.length,
+        errors,
+        items: previewItems,
+      });
       return {
         created,
         skipped,
@@ -579,8 +709,21 @@ export class ContentService {
         errors: errors.slice(0, 100),
         errorCount: errors.length,
         rowCount: rows.length,
+        importRunId,
       };
     }
+
+    const importRunId = await this.recordImportRun({
+      kind: input.kind === "mcq" ? "MCQ" : "FLASH",
+      fileName: input.filename,
+      actorUserId: input.actorUserId,
+      createdCount: created,
+      skippedCount: skipped,
+      errorCount: errors.length,
+      rowCount: rows.length,
+      errors,
+      items: previewItems,
+    });
 
     return {
       created,
@@ -588,6 +731,7 @@ export class ContentService {
       errors: errors.slice(0, 100),
       errorCount: errors.length,
       rowCount: rows.length,
+      importRunId,
     };
   }
 

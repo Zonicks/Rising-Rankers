@@ -79,6 +79,12 @@ enum ArticleStatus {
   PUBLISHED
 }
 
+enum ContentImportKind {
+  MCQ
+  FLASH
+  BOOK
+}
+
 model User {
   id              String        @id @default(cuid())
   email           String        @unique
@@ -134,6 +140,7 @@ model User {
   rightsRequests  DataRightsRequest[]
   rightsActionsTaken DataRightsRequest[] @relation("RightsActor")
   nominee         UserNominee?
+  contentImportRuns ContentImportRun[] @relation("ContentImportActor")
 }
 
 model UserProfile {
@@ -802,6 +809,26 @@ model AuditLog {
   actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([action, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model ContentImportRun {
+  id            String            @id @default(cuid())
+  kind          ContentImportKind
+  fileName      String
+  actorUserId   String?
+  createdCount  Int               @default(0)
+  skippedCount  Int               @default(0)
+  errorCount    Int               @default(0)
+  rowCount      Int               @default(0)
+  errors        Json?
+  items         Json?
+  createdAt     DateTime          @default(now())
+
+  actor User? @relation("ContentImportActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([kind, createdAt])
   @@index([actorUserId, createdAt])
 }
 

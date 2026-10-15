@@ -54,6 +54,48 @@ function importResultMessage(
   return parts.join(" · ");
 }
 
+function formatIstDateTime(iso: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(iso));
+}
+
+function truncateCell(value: unknown, max = 80) {
+  const text = value == null ? "" : String(value);
+  if (text.length <= max) return text;
+  return `${text.slice(0, max - 1)}…`;
+}
+
+type ImportRunSummary = {
+  id: string;
+  kind: "MCQ" | "FLASH" | "BOOK";
+  fileName: string;
+  createdCount: number;
+  skippedCount: number;
+  errorCount: number;
+  rowCount: number;
+  createdAt: string;
+  actor?: { id: string; email: string; fullName: string | null } | null;
+};
+
+type ImportRunDetail = ImportRunSummary & {
+  errors: RowError[] | null;
+  items: Array<Record<string, unknown>> | null;
+};
+
+type ImportResultState = {
+  kind: ImportKind;
+  message: string;
+  errors: RowError[];
+  importRunId?: string;
+};
+
 type Chapter = {
   id: string;
   title: string;
@@ -82,7 +124,7 @@ type McqRow = {
   chapter: { id: string; title: string; subject: string } | null;
 };
 
-type Panel = null | "chapter" | "mcq" | "flash" | "import";
+type Panel = null | "chapter" | "mcq" | "flash" | "import" | "history";
 
 export default function ContentPage() {
   const router = useRouter();
@@ -95,6 +137,10 @@ export default function ContentPage() {
   const [openPanel, setOpenPanel] = useState<Panel>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<ImportResultState | null>(null);
+  const [historyRuns, setHistoryRuns] = useState<ImportRunSummary[]>([]);
+  const [historyDetail, setHistoryDetail] = useState<ImportRunDetail | null>(null);
+  const [historyBusy, setHistoryBusy] = useState(false);
 
   const [chapterForm, setChapterForm] = useState({
     title: "",
@@ -161,12 +207,74 @@ export default function ContentPage() {
     setPendingFlash([]);
     setPendingBooks([]);
     setServerFile(null);
+    setImportResult(null);
+  }
+
+  async function openHistory() {
+    const token = localStorage.getItem(adminTokenKey);
+    if (!token) return;
+    setHistoryBusy(true);
+    setError(null);
+    setHistoryDetail(null);
+    try {
+      const data = await api<ImportRunSummary[]>("/api/v1/admin/imports?take=50", { token });
+      setHistoryRuns(data);
+      setOpenPanel("history");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load import history");
+    } finally {
+      setHistoryBusy(false);
+    }
+  }
+
+  async function openHistoryDetail(id: string) {
+    const token = localStorage.getItem(adminTokenKey);
+    if (!token) return;
+    setHistoryBusy(true);
+    setError(null);
+    try {
+      const data = await api<ImportRunDetail>(`/api/v1/admin/imports/${id}`, { token });
+      setHistoryDetail(data);
+      setOpenPanel("history");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load import");
+    } finally {
+      setHistoryBusy(false);
+    }
+  }
+
+  function previewItemsForKind(): Array<Record<string, unknown>> {
+    if (importKind === "mcq") {
+      return pendingMcqs.map((item) => ({
+        question: item.question,
+        optionA: item.optionA,
+        optionB: item.optionB,
+        optionC: item.optionC,
+        optionD: item.optionD,
+        correctOption: item.correctOption,
+      }));
+    }
+    if (importKind === "flash") {
+      return pendingFlash.map((item) => ({
+        front: item.front,
+        back: item.back,
+      }));
+    }
+    return pendingBooks.map((item) => ({
+      title: item.book,
+      author: item.author ?? null,
+      program: item.program,
+      subject: item.subject,
+      chapter: item.chapter ?? null,
+      question: item.question ?? null,
+    }));
   }
 
   async function onImportFile(file: File | undefined) {
     if (!file) return;
     setError(null);
     setMsg(null);
+    setImportResult(null);
     try {
       if (file.size > SERVER_IMPORT_BYTES) {
         setServerFile(file);
@@ -250,7 +358,20 @@ export default function ContentPage() {
     }
     setImportBusy(true);
     setError(null);
+    setImportResult(null);
+    const parseErrors = [...importErrors];
+    const previewSnapshot = previewItemsForKind();
+    const fileLabel = importFileName?.split(" · ")[0] || "import.csv";
     try {
+      let created = 0;
+      let skipped = 0;
+      let questionsCreated = 0;
+      let questionsSkipped = 0;
+      let categoriesCreated = 0;
+      let subcategoriesCreated = 0;
+      let rowErrors: RowError[] = [];
+      let importRunId: string | undefined;
+
       if (serverFile) {
         const data = await apiUpload<{
           created: number;
@@ -261,6 +382,7 @@ export default function ContentPage() {
           subcategoriesCreated?: number;
           errors: RowError[];
           errorCount: number;
+          importRunId?: string;
         }>(
           "/api/v1/admin/imports",
           serverFile,
@@ -271,16 +393,16 @@ export default function ContentPage() {
           },
           token
         );
-        setMsg(importResultMessage(importKind, data));
-        if (data.errors?.length) setImportErrors(data.errors);
+        created = data.created;
+        skipped = data.skipped;
+        questionsCreated = data.questionsCreated ?? 0;
+        questionsSkipped = data.questionsSkipped ?? 0;
+        categoriesCreated = data.categoriesCreated ?? 0;
+        subcategoriesCreated = data.subcategoriesCreated ?? 0;
+        rowErrors = data.errors ?? [];
+        importRunId = data.importRunId;
       } else {
-        let created = 0;
-        let skipped = 0;
-        let questionsCreated = 0;
-        let questionsSkipped = 0;
-        let categoriesCreated = 0;
-        let subcategoriesCreated = 0;
-        const rowErrors: RowError[] = [...importErrors];
+        rowErrors = [...parseErrors];
         const batches =
           importKind === "mcq"
             ? chunk(pendingMcqs, 500)
@@ -313,21 +435,45 @@ export default function ContentPage() {
           subcategoriesCreated += data.subcategoriesCreated ?? 0;
           if (data.errors?.length) rowErrors.push(...data.errors);
         }
-        setMsg(
-          importResultMessage(importKind, {
-            created,
-            skipped,
-            questionsCreated,
-            questionsSkipped,
-            categoriesCreated,
-            subcategoriesCreated,
+        const recorded = await api<{ importRunId: string }>("/api/v1/admin/imports/runs", {
+          method: "POST",
+          token,
+          body: JSON.stringify({
+            kind: importKind === "mcq" ? "MCQ" : importKind === "flash" ? "FLASH" : "BOOK",
+            fileName: fileLabel,
+            createdCount: created,
+            skippedCount: skipped,
             errorCount: rowErrors.length,
-          })
-        );
-        if (rowErrors.length) setImportErrors(rowErrors);
+            rowCount: items.length + parseErrors.length,
+            errors: rowErrors.slice(0, 200),
+            items: previewSnapshot.slice(0, 500),
+          }),
+        });
+        importRunId = recorded.importRunId;
       }
-      resetImport();
-      setOpenPanel(null);
+
+      const message = importResultMessage(importKind, {
+        created,
+        skipped,
+        questionsCreated,
+        questionsSkipped,
+        categoriesCreated,
+        subcategoriesCreated,
+        errorCount: rowErrors.length,
+      });
+      setMsg(message);
+      setImportErrors(rowErrors);
+      setImportResult({
+        kind: importKind,
+        message,
+        errors: rowErrors,
+        importRunId,
+      });
+      setPendingMcqs([]);
+      setPendingFlash([]);
+      setPendingBooks([]);
+      setServerFile(null);
+      setImportReady(0);
       await loadAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Import failed");
@@ -474,6 +620,17 @@ export default function ContentPage() {
           }}
         >
           Import book
+        </button>
+        <button
+          type="button"
+          className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+          title="Import history"
+          aria-label="Import history"
+          disabled={historyBusy}
+          onClick={() => void openHistory()}
+        >
+          <HistoryIcon />
+          History
         </button>
       </div>
 
@@ -717,34 +874,188 @@ export default function ContentPage() {
                 {importReady >= 0
                   ? ` · ${importReady} valid row${importReady === 1 ? "" : "s"}`
                   : " · will be parsed on the server"}
-                {importErrors.length ? ` · ${importErrors.length} skipped` : ""}
+                {!importResult && importErrors.length
+                  ? ` · ${importErrors.length} parse error${importErrors.length === 1 ? "" : "s"}`
+                  : ""}
               </p>
             ) : null}
-            {importErrors.length > 0 ? (
-              <div className="max-h-40 overflow-auto rounded-[var(--radius-md)] border border-[var(--line)] p-3 text-sm text-[var(--ink-soft)]">
-                {importErrors.slice(0, 30).map((err) => (
-                  <p key={`${err.row}-${err.message}`}>
-                    Row {err.row}: {err.message}
-                  </p>
-                ))}
-                {importErrors.length > 30 ? (
-                  <p>…and {importErrors.length - 30} more</p>
-                ) : null}
+
+            {importResult ? (
+              <div className="space-y-3 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--bg)] p-3">
+                <p className="text-sm font-semibold text-[var(--ink)]">{importResult.message}</p>
+                {importResult.errors.length > 0 ? (
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--danger)]">
+                      Row errors ({importResult.errors.length})
+                    </p>
+                    <div className="max-h-48 overflow-auto rounded-[var(--radius-md)] border border-[var(--danger-soft)] bg-[var(--danger-soft)]/40 p-3 text-sm text-[var(--danger)]">
+                      {importResult.errors.map((err) => (
+                        <p key={`result-${err.row}-${err.message}`}>
+                          Row {err.row}: {err.message}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[var(--ink-soft)]">No row errors.</p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {importResult.importRunId ? (
+                    <button
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      onClick={() => void openHistoryDetail(importResult.importRunId!)}
+                    >
+                      View this import
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="btn-primary btn-sm"
+                    onClick={() => {
+                      resetImport();
+                    }}
+                  >
+                    Import another file
+                  </button>
+                </div>
               </div>
             ) : null}
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={importBusy || (!serverFile && importReady <= 0)}
-              onClick={() => void runImport()}
-            >
-              {importBusy
-                ? "Importing…"
-                : serverFile
-                  ? "Upload and import"
-                  : `Import ${importReady} row${importReady === 1 ? "" : "s"}`}
-            </button>
+
+            {!importResult && importReady > 0 ? (
+              <div>
+                <p className="admin-label">Preview (will import)</p>
+                <ImportPreviewTable kind={importKind} items={previewItemsForKind()} />
+              </div>
+            ) : null}
+
+            {!importResult && serverFile && importReady < 0 ? (
+              <p className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--bg)] p-3 text-sm text-[var(--ink-soft)]">
+                Large file — preview is available in History after upload completes.
+              </p>
+            ) : null}
+
+            {!importResult && importErrors.length > 0 ? (
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--warning)]">
+                  Parse errors (will not import)
+                </p>
+                <div className="max-h-40 overflow-auto rounded-[var(--radius-md)] border border-[var(--line)] p-3 text-sm text-[var(--ink-soft)]">
+                  {importErrors.slice(0, 50).map((err) => (
+                    <p key={`${err.row}-${err.message}`}>
+                      Row {err.row}: {err.message}
+                    </p>
+                  ))}
+                  {importErrors.length > 50 ? (
+                    <p>…and {importErrors.length - 50} more</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            {!importResult ? (
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={importBusy || (!serverFile && importReady <= 0)}
+                onClick={() => void runImport()}
+              >
+                {importBusy
+                  ? "Importing…"
+                  : serverFile
+                    ? "Upload and import"
+                    : `Import ${importReady} row${importReady === 1 ? "" : "s"}`}
+              </button>
+            ) : null}
           </div>
+        </AdminDialog>
+      ) : null}
+
+      {openPanel === "history" ? (
+        <AdminDialog
+          title={historyDetail ? "Import details" : "Import history"}
+          onClose={() => {
+            setOpenPanel(null);
+            setHistoryDetail(null);
+          }}
+        >
+          {historyDetail ? (
+            <div className="space-y-4">
+              <button
+                type="button"
+                className="text-sm font-semibold text-[var(--accent)]"
+                onClick={() => setHistoryDetail(null)}
+              >
+                ← Back to list
+              </button>
+              <div>
+                <p className="text-lg font-semibold text-[var(--ink)]">{historyDetail.fileName}</p>
+                <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                  {historyDetail.kind} · {formatIstDateTime(historyDetail.createdAt)} ·{" "}
+                  {historyDetail.createdCount} created · {historyDetail.skippedCount} skipped ·{" "}
+                  {historyDetail.errorCount} error{historyDetail.errorCount === 1 ? "" : "s"}
+                </p>
+              </div>
+              {Array.isArray(historyDetail.items) && historyDetail.items.length > 0 ? (
+                <div>
+                  <p className="admin-label">Imported rows</p>
+                  <ImportPreviewTable
+                    kind={
+                      historyDetail.kind === "MCQ"
+                        ? "mcq"
+                        : historyDetail.kind === "FLASH"
+                          ? "flash"
+                          : "book"
+                    }
+                    items={historyDetail.items}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-[var(--muted)]">No preview rows stored for this import.</p>
+              )}
+              {Array.isArray(historyDetail.errors) && historyDetail.errors.length > 0 ? (
+                <div>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--danger)]">
+                    Row errors ({historyDetail.errors.length})
+                  </p>
+                  <div className="max-h-40 overflow-auto rounded-[var(--radius-md)] border border-[var(--line)] p-3 text-sm text-[var(--ink-soft)]">
+                    {historyDetail.errors.map((err) => (
+                      <p key={`hist-${err.row}-${err.message}`}>
+                        Row {err.row}: {err.message}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : historyRuns.length === 0 ? (
+            <p className="text-sm text-[var(--muted)]">No imports recorded yet.</p>
+          ) : (
+            <div className="row-list max-h-[min(28rem,70vh)] overflow-y-auto">
+              {historyRuns.map((run) => (
+                <button
+                  key={run.id}
+                  type="button"
+                  className="flex w-full items-start gap-3 py-3 text-left transition-colors hover:bg-[var(--accent-soft)]/40"
+                  onClick={() => void openHistoryDetail(run.id)}
+                >
+                  <span className="mt-0.5 text-[var(--accent)]">
+                    <HistoryIcon />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold text-[var(--ink)]">{run.fileName}</span>
+                    <span className="mt-1 block text-sm text-[var(--ink-soft)]">
+                      {run.kind} · {formatIstDateTime(run.createdAt)}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-[var(--muted)]">
+                      {run.createdCount} created · {run.skippedCount} skipped · {run.errorCount}{" "}
+                      error{run.errorCount === 1 ? "" : "s"}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </AdminDialog>
       ) : null}
 
@@ -855,5 +1166,112 @@ export default function ContentPage() {
         )}
       </PageSection>
     </AdminShell>
+  );
+}
+
+function HistoryIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 8v5l3 2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M3.5 12a8.5 8.5 0 1 0 2.2-5.6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path d="M3.5 4.5v4h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ImportPreviewTable({
+  kind,
+  items,
+}: {
+  kind: ImportKind;
+  items: Array<Record<string, unknown>>;
+}) {
+  if (items.length === 0) {
+    return <p className="text-sm text-[var(--muted)]">No rows to preview.</p>;
+  }
+  const shown = items.slice(0, 100);
+  return (
+    <div className="max-h-56 overflow-auto rounded-[var(--radius-md)] border border-[var(--line)]">
+      <table className="min-w-full text-left text-sm">
+        <thead className="sticky top-0 bg-[var(--bg-elevated)] text-xs uppercase tracking-[0.06em] text-[var(--muted)]">
+          <tr>
+            <th className="px-3 py-2 font-semibold">#</th>
+            {kind === "mcq" ? (
+              <>
+                <th className="px-3 py-2 font-semibold">Question</th>
+                <th className="px-3 py-2 font-semibold">Ans</th>
+              </>
+            ) : null}
+            {kind === "flash" ? (
+              <>
+                <th className="px-3 py-2 font-semibold">Front</th>
+                <th className="px-3 py-2 font-semibold">Back</th>
+              </>
+            ) : null}
+            {kind === "book" ? (
+              <>
+                <th className="px-3 py-2 font-semibold">Book / question</th>
+                <th className="px-3 py-2 font-semibold">Path</th>
+              </>
+            ) : null}
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((item, index) => (
+            <tr key={index} className="border-t border-[var(--line)] align-top">
+              <td className="px-3 py-2 text-[var(--muted)]">{index + 1}</td>
+              {kind === "mcq" ? (
+                <>
+                  <td className="px-3 py-2 text-[var(--ink)]">
+                    {truncateCell(item.question ?? item.Question)}
+                  </td>
+                  <td className="px-3 py-2 font-semibold text-[var(--accent)]">
+                    {String(item.correctOption ?? "")}
+                  </td>
+                </>
+              ) : null}
+              {kind === "flash" ? (
+                <>
+                  <td className="px-3 py-2">{truncateCell(item.front)}</td>
+                  <td className="px-3 py-2 text-[var(--ink-soft)]">{truncateCell(item.back)}</td>
+                </>
+              ) : null}
+              {kind === "book" ? (
+                <>
+                  <td className="px-3 py-2">
+                    {item.kind === "question" || item.question
+                      ? truncateCell(item.question ?? item.title)
+                      : truncateCell(item.title ?? item.book)}
+                  </td>
+                  <td className="px-3 py-2 text-[var(--ink-soft)]">
+                    {truncateCell(
+                      [item.program, item.subject, item.author, item.chapter]
+                        .filter(Boolean)
+                        .join(" · ") || "—"
+                    )}
+                  </td>
+                </>
+              ) : null}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {items.length > 100 ? (
+        <p className="border-t border-[var(--line)] px-3 py-2 text-xs text-[var(--muted)]">
+          Showing first 100 of {items.length} rows
+        </p>
+      ) : null}
+    </div>
   );
 }

@@ -158,12 +158,15 @@ git log -1 --oneline
 docker compose --env-file /etc/learning.env up -d --build
 
 # apply Prisma schema changes (does not wipe data)
+# Required after ContentImportRun (import history) and other schema updates
 docker compose --env-file /etc/learning.env exec -T api pnpm exec prisma db push
 
 # confirm
 curl -fsS http://127.0.0.1:4000/health
 docker compose --env-file /etc/learning.env ps
 ```
+
+After API schema changes that only affect Admin UI (import preview/history), also **redeploy the Admin Vercel project** so the new History button and preview dialog ship.
 
 Healthy response:
 

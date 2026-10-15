@@ -244,6 +244,7 @@ export const flashCardBulkSchema = z.object({
   items: z.array(flashCardCreateSchema).min(1).max(500),
   defaultChapterId: z.string().min(1).optional(),
   createMissingPath: z.boolean().optional(),
+  fileName: z.string().min(1).max(260).optional(),
 });
 
 export const mcqCreateSchema = z
@@ -268,6 +269,7 @@ export const mcqBulkSchema = z.object({
   items: z.array(mcqCreateSchema).min(1).max(500),
   defaultChapterId: z.string().min(1).optional(),
   createMissingPath: z.boolean().optional(),
+  fileName: z.string().min(1).max(260).optional(),
 });
 
 export const bookImportItemSchema = z
@@ -309,6 +311,21 @@ export const bookImportItemSchema = z
 export const bookBulkSchema = z.object({
   items: z.array(bookImportItemSchema).min(1).max(500),
   createMissingPath: z.boolean().optional(),
+  fileName: z.string().min(1).max(260).optional(),
+});
+
+export const contentImportRunCreateSchema = z.object({
+  kind: z.enum(["MCQ", "FLASH", "BOOK"]),
+  fileName: z.string().min(1).max(260),
+  createdCount: z.number().int().min(0),
+  skippedCount: z.number().int().min(0).optional(),
+  errorCount: z.number().int().min(0).optional(),
+  rowCount: z.number().int().min(0).optional(),
+  errors: z
+    .array(z.object({ row: z.number().int(), message: z.string().min(1) }))
+    .max(200)
+    .optional(),
+  items: z.array(z.record(z.unknown())).max(500).optional(),
 });
 
 export const mcqAnswerSchema = z.object({

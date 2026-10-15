@@ -91,18 +91,20 @@ export class ContentController {
   }
 
   async adminCreateFlash(
-    req: FastifyRequest<{ Body: { items?: unknown[]; defaultChapterId?: string; createMissingPath?: boolean } & Record<string, unknown> }>,
+    req: FastifyRequest<{ Body: { items?: unknown[]; defaultChapterId?: string; createMissingPath?: boolean; fileName?: string } & Record<string, unknown> }>,
     reply: FastifyReply
   ) {
     const body = req.body as {
       items?: Array<never>;
       defaultChapterId?: string;
       createMissingPath?: boolean;
+      fileName?: string;
     } & Record<string, unknown>;
     const items = body.items ?? [body];
     const data = await contentService.createFlashCards(items as never, {
       defaultChapterId: body.defaultChapterId,
       createMissingPath: body.createMissingPath,
+      collectErrors: Boolean(body.items),
     });
     return reply.status(201).send({ data });
   }
@@ -118,18 +120,20 @@ export class ContentController {
   }
 
   async adminCreateMcq(
-    req: FastifyRequest<{ Body: { items?: unknown[]; defaultChapterId?: string; createMissingPath?: boolean } & Record<string, unknown> }>,
+    req: FastifyRequest<{ Body: { items?: unknown[]; defaultChapterId?: string; createMissingPath?: boolean; fileName?: string } & Record<string, unknown> }>,
     reply: FastifyReply
   ) {
     const body = req.body as {
       items?: Array<never>;
       defaultChapterId?: string;
       createMissingPath?: boolean;
+      fileName?: string;
     } & Record<string, unknown>;
     const items = body.items ?? [body];
     const data = await contentService.createMcqs(items as never, {
       defaultChapterId: body.defaultChapterId,
       createMissingPath: body.createMissingPath,
+      collectErrors: Boolean(body.items),
     });
     return reply.status(201).send({ data });
   }
@@ -149,6 +153,7 @@ export class ContentController {
           row?: number;
         }>;
         createMissingPath?: boolean;
+        fileName?: string;
       };
     }>,
     reply: FastifyReply
@@ -181,8 +186,51 @@ export class ContentController {
       kind: kindRaw,
       defaultChapterId: field("defaultChapterId") || undefined,
       createMissingPath: createMissing == null ? true : createMissing !== "false" && createMissing !== "0",
+      actorUserId: req.user?.sub,
     });
     return reply.send({ data });
+  }
+
+  async adminListImports(req: FastifyRequest<{ Querystring: { take?: string } }>, reply: FastifyReply) {
+    const data = await contentService.listImportRuns(
+      req.query.take ? Number(req.query.take) : undefined
+    );
+    return reply.send({ data });
+  }
+
+  async adminGetImport(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+    const data = await contentService.getImportRun(req.params.id);
+    return reply.send({ data });
+  }
+
+  async adminRecordImport(
+    req: FastifyRequest<{
+      Body: {
+        kind: "MCQ" | "FLASH" | "BOOK";
+        fileName: string;
+        createdCount: number;
+        skippedCount?: number;
+        errorCount?: number;
+        rowCount?: number;
+        errors?: Array<{ row: number; message: string }>;
+        items?: Array<Record<string, unknown>>;
+      };
+    }>,
+    reply: FastifyReply
+  ) {
+    const body = req.body;
+    const importRunId = await contentService.recordImportRun({
+      kind: body.kind,
+      fileName: body.fileName,
+      actorUserId: req.user?.sub,
+      createdCount: body.createdCount,
+      skippedCount: body.skippedCount ?? 0,
+      errorCount: body.errorCount ?? body.errors?.length ?? 0,
+      rowCount: body.rowCount ?? 0,
+      errors: body.errors ?? [],
+      items: body.items ?? [],
+    });
+    return reply.status(201).send({ data: { importRunId } });
   }
 
   async adminListMcq(
